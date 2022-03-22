@@ -21,7 +21,7 @@ int main ()
 {
     void *  runtime;
     BOOL    retval;
-    HANDLE  h_thread;
+    HANDLE  th_shellcode;
     DWORD   old_protect = 0;
 
     // shellcode storage in stack
@@ -39,8 +39,8 @@ int main ()
 
     if (retval != 0)
     {
-        h_thread = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
-        WaitForSingleObject (h_thread, -1);
+        th_shellcode = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
+        WaitForSingleObject (th_shellcode, -1);
     }
 
     return 0;
