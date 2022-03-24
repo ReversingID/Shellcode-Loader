@@ -6,7 +6,7 @@ Executing shellcode using timer.
 
 Eksekusi shellcode dengan `CreateTimerQueue` dan `CreateTimerQueueTimer`.
 
-Thread pool adalah sekumpulan worker thread yang mengeksekusi callback secara asinkron.
+Timer Queue digunakan untuk menampung objek timer ke dalam antrean. Sebuah objek timer adalah objek lightweight yang dapat digunakan untuk memanggil callback saat waktu tertentu.
 
 ```c++
 HANDLE CreateTimerQueue ();
