@@ -10,8 +10,11 @@ Enumerasi resource types di dalam module dan eksekusi callback untuk memproses t
 
 ```c++
 BOOL EnumResourceTypesA (HMODULE hModule, ENUMRESTYPEPROCA lpEnumFunc, LONG_PTR lParam);
+
+BOOL EnumResourceTypesW (HMODULE hModule, ENUMRESTYPEPROCW lpEnumFunc, LONG_PTR lParam);
 ```
 
 ### Reference 
 
-- [MSDN EnumResourceTypes](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-enumresourcetypesa)
+- [MSDN EnumResourceTypesA](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-enumresourcetypesa)
+- [MSDN EnumResourceTypesW](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-enumresourcetypesw)
