@@ -39,5 +39,6 @@ This repository will cover basic process in shellcode loading:
 - `allocation`: how to allocate memory to store shellcode temporary (as code).
 - `storage`: how to store shellcode.
 - `execution`: how to execute shellcode.
+- `writing`: how to write code to memory (self), either directly copy or using any transformation.
 
 Some techniques use API provided by the OS, directly or indirectly.

@@ -41,5 +41,6 @@ Repository ini akan membahas proses dasar dalam sebuah pemuatan shellcode, yakni
 - `allocation`: strategi alokasi memory untuk menampung shellcode (sebagai kode).
 - `storage`: strategi penyimpanan shellcode.
 - `execution`: strategi eksekusi shellcode.
+- `writing`: strategi menulis kode ke memory (sendiri), baik secara langsung maupun melalui proses transformasi tertentu.
 
 Sebagian teknik memanfaatkan API yang disediakan oleh OS, baik secara langsung maupun tak langsung.
