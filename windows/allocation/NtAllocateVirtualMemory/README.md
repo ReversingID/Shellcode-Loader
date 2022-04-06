@@ -17,5 +17,5 @@ NTSTATUS NtFreeVirtualMemory (HANDLE ProcessHandle, PVOID * BaseAddress, PULONG 
 ### Reference 
 
 - [NTInternals NtAllocateVirtualMemory](http://undocumented.ntinternals.net/index.html?page=UserMode%2FUndocumented%20Functions%2FMemory%20Management%2FVirtual%20Memory%2FNtAllocateVirtualMemory.html)
-- [NTInternals NtFreeVirtualMemory](http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/Memory%20Management/Virtual%20Memory/NtProtectVirtualMemory.html)
+- [NTInternals NtProtectVirtualMemory](http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/Memory%20Management/Virtual%20Memory/NtProtectVirtualMemory.html)
 - [NTInternals NtFreeVirtualMemory](http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/Memory%20Management/Virtual%20Memory/NtFreeVirtualMemory.html)
