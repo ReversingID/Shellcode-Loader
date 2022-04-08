@@ -1,6 +1,6 @@
 /*
     Generator
-    Convert binary to UUID
+    Convert endianness from little-endian to big-endian.
 
 Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tcgenerate.cpp 
