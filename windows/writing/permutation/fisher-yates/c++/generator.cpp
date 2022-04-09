@@ -14,8 +14,6 @@ Note:
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SEED 0x1337
-
 void permutation (uint32_t index[], uint32_t size, uint32_t seed)
 {
     uint32_t temp;
@@ -47,6 +45,8 @@ int main()
     uint8_t  *  payload;
     uint32_t *  indexes;
     uint32_t    idx;
+    uint32_t    seed = 0x1337;
+    uint32_t *  ptr;
 
 
     // open existing file
@@ -54,19 +54,26 @@ int main()
 
     // query the size and create enough space in heap
     payload_len = GetFileSize (f, NULL);
-    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len);
+    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len + sizeof(seed));
+    ptr     = (uint32_t*)payload;
+    *ptr    = seed;
 
     // read the shellcode
-    ReadFile(f, payload, payload_len, &nread, NULL);
+    ReadFile(f, payload + sizeof(seed), payload_len, &nread, NULL);
 
     // generate array of index
     indexes = (uint32_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len * sizeof(uint32_t));
     for (idx = 0; idx < payload_len; idx++) indexes[idx] = idx;
 
-    permutation(indexes, payload_len, SEED);
+    permutation(indexes, payload_len, seed);
 
     // print
-    printf("{");
+    printf("{\n  ");
+    for (idx = 0; idx < sizeof(seed); idx++)
+    {
+        printf("0x%02x, ", payload[idx]);
+    }
+    payload += sizeof(seed);
     for (idx = 0; idx < payload_len; idx++)
     {
         if (idx % 16 == 0)
@@ -76,11 +83,11 @@ int main()
     }
     printf("\n}\n");
 
-    printf ("Length: %lld\n", payload_len);
+    printf ("Length: %lld\n", payload_len + sizeof(seed));
 
     // destroy heap
     HeapFree (GetProcessHeap(), 0, indexes);
-    HeapFree (GetProcessHeap(), 0, payload);
+    HeapFree (GetProcessHeap(), 0, payload - sizeof(seed));
 
     return 0;
 }
