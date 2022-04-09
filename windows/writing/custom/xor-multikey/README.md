@@ -9,5 +9,5 @@ Shellcode dienkripsi menggunakan XOR sederhana. Shellcode akan dibagi menjadi be
 Shellcode yang tersimpan memiliki format sebagai berikut:
 
 ```
-[N] [B] [[Key-1] [Encoded Shellcode-1]] [[Key-2] [Encoded Shellcode-2]] ... [[Key-N] [Encoded Shellcode-N]].
+[N] [S] [[Key-1] [Encoded Shellcode-1]] [[Key-2] [Encoded Shellcode-2]] ... [[Key-N] [Encoded Shellcode-N]].
 ```
