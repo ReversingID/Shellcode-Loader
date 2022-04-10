@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    n/a
     - permission: VirtualProtect
     - execution:  CreateThread
 */

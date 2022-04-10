@@ -12,9 +12,6 @@ Technique:
     - writing:    fisher-yates shuffle
     - permission: VirtualProtect
     - execution:  CreateThread
-
-Note:
-    - operating 64-bit number with ntohll
 */
 
 #include <windows.h>

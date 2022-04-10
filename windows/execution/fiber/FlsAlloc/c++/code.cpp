@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  FlsAlloc + FlsSetValue
 */
@@ -51,6 +52,9 @@ int main ()
         // store dummy data into FLS
         dummy = "Reversing.ID";
         FlsSetValue (idx, &dummy);
+
+        // release FLS
+        FlsFree (idx);
     }
 
     // deallocate the space

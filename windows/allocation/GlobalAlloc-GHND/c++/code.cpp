@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: GlobalAlloc(GHND)
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  CreateThread
 */

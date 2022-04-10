@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  EnumerateLoadedModulesEx
 */

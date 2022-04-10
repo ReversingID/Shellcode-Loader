@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: CreateFileMapping + MapViewOfFile
+    - writing:    RtlMoveMemory
     - permission: 
     - execution:  CreateThread
 */

@@ -4,9 +4,6 @@
 
 Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tcgenerate.cpp 
-
-Note:
-    - operating 64-bit number with htonll
 */
 
 #include <windows.h>
@@ -45,7 +42,7 @@ int main()
     uint8_t  *  payload;
     uint32_t *  indexes;
     uint32_t    idx;
-    uint32_t    seed = 0x1337;
+    uint32_t    seed = 0x1337;      // try to generate random seed
     uint32_t *  ptr;
 
 

@@ -10,7 +10,7 @@ Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /MACHINE:x64 /Tccode.cpp resources.obj
 
 Technique:
-    - resources:  FindResource, LoadResource, LockResource
+    - writing:    FindResource, LoadResource, LockResource
     - allocation: VirtualAlloc
     - permission: VirtualProtect
     - execution:  CreateThread

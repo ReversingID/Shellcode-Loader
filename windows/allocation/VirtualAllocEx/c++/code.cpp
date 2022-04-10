@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAllocEx
+    - writing:    RtlMoveMemory
     - permission: VirtualProtectEx
     - execution:  CreateThread
 */

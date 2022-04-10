@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  CreateThreadpoolWait + SetThreadpoolWait
 */
@@ -47,6 +48,9 @@ int main ()
         SetThreadpoolWait (th_wait, event, NULL);
 
         WaitForSingleObject (event, -1);
+
+        // close the handle to the event
+        CloseHandle (event);
     }
 
     // deallocate the space

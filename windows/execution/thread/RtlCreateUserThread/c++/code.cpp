@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  RtlCreateUserThread
 */
@@ -19,7 +20,6 @@ Technique:
 /* ========= some definition ========= */
 #define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
 #define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-#define GetCurrentProcess()  ((HANDLE)(LONG_PTR) -1)
 
 typedef struct _CLIENT_ID {
     HANDLE UniqueProcess;

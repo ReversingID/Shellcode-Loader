@@ -9,6 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    RtlMoveMemory
     - permission: VirtualProtect
     - execution:  RtlUserFiberStart
 */
@@ -19,13 +20,14 @@ Technique:
 /* ========= some definition ========= */
 #define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
 #define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-#define GetCurrentProcess()  ((HANDLE)(LONG_PTR) -1)
 
 #if defined(_WIN64)
 #define TEB_FIBERDATA_PTR_OFFSET    0x17ee
 #define LPFIBER_IP_OFFSET           0x0a8
 #else 
 // need more research
+#define TEB_FIBERDATA_PTR_OFFSET    0xfca
+#define LPFIBER_IP_OFFSET           0x0a8
 #endif 
 
 /* ========= function signatures ========= */
