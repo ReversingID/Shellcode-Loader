@@ -1,0 +1,8 @@
+#include "resources.h"
+
+SHELLCODE RCDATA shellcode.bin
+
+STRINGTABLE
+BEGIN 
+    ID_STRING   "Reversing.ID Shellcode Loader"
+END 
