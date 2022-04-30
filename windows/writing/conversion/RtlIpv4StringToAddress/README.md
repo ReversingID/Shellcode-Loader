@@ -8,7 +8,7 @@ Penyalinan shellcode menggunakan `RtlIpv4StringToAddress`.
 
 Fungsi ini akan mengubah IPv4 address dari representasi string menjadi binary. IPv4 address adalah identitas host yang berperan dalam pengalamatan logis di jaringan. Ukuran sebuah IPv4 address adalah 4 byte. 
 
-Karena IPv4 address dapat dianggap sebagai sebuah blok berukuran 4 byte, maka sebuah shellcode yang besar harus dipecah menjadi beberapa MAC address. Padding perlu dilakukan agar ukuran data terjaga sebagai kelipatan 4.
+Karena IPv4 address dapat dianggap sebagai sebuah blok berukuran 4 byte, maka sebuah shellcode yang besar harus dipecah menjadi beberapa blok. Padding perlu dilakukan agar ukuran data terjaga sebagai kelipatan 4.
 
 ```c++
 NTSTATUS RtlIpv4StringToAddressA (PCSTR S, BOOLEAN Strict, PCSTR * Terminator, in_addr * Addr);
