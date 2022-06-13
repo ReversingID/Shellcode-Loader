@@ -1,0 +1,14 @@
+[package]
+name = "shellcode-loader"
+version = "0.1.0"
+edition = "2021"
+authors = ["Satria Ady Pradana <xathrya@reversing.id>"]
+
+[dependencies]
+windows = { version = "0.35.0", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Memory" ,
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming"
+]}
