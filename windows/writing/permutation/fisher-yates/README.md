@@ -1,6 +1,6 @@
 # Shellcode Loader
 
-Reordering shellcode by permutation.
+Reordering the shellcode with custom algorithm.
 
 ### Overview
 
