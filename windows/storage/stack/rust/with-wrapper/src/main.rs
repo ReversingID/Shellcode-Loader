@@ -12,6 +12,9 @@ Technique:
     - writing:    
     - permission: 
     - execution:  unsafe call to function pointer
+
+Note: 
+	- use wrapper for allocation and running thread
 */
 
 use std::ptr;
