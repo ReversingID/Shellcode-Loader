@@ -64,6 +64,9 @@ int main ()
         //     "MY");
         
         CertFindChainInStore (store, X509_ASN_ENCODING, 0, CERT_CHAIN_FIND_BY_ISSUER, &param, chain_ctx);
+
+        // close the handle to store
+        CertCloseStore (store, 0);
     }
 
     // deallocate the space

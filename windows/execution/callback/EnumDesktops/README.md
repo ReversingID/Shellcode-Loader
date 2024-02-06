@@ -14,5 +14,5 @@ BOOL EnumDesktopsW (HWINSTA hwinsta, DESKTOPENUMPROCW lpEnumFunc, LPARAM lParam)
 
 ### Reference 
 
-- [MSDN EnumDesktopA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopsa)
-- [MSDN EnumDesktopW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopsw)
+- [MSDN EnumDesktopsA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopsa)
+- [MSDN EnumDesktopsW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopsw)

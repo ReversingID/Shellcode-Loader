@@ -2,7 +2,8 @@
     Shellcode Loader
     Archive of Reversing.ID
 
-    Executing shellcode as new thread.
+    Executing shellcode by jump to it.
+    Cast the payload as function and invoke it.
 
 Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tccode.cpp
@@ -21,7 +22,6 @@ int main ()
 {
     void *  runtime;
     BOOL    retval;
-    HANDLE  h_thread;
     DWORD   old_protect = 0;
 
     // shellcode storage in stack

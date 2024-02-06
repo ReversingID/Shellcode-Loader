@@ -9,7 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
-    - writing:    affine cipher
+    - writing:    atbash cipher
     - permission: VirtualProtect
     - execution:  CreateThread
 */

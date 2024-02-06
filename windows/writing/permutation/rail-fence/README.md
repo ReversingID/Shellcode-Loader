@@ -1,6 +1,6 @@
 # Shellcode Loader
 
-Transform the shellcode with custom algorithm.
+Reordering the shellcode with custom algorithm.
 
 ### Overview
 

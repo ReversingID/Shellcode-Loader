@@ -84,7 +84,6 @@ int main ()
     uint8_t     payload []  = { 0x90, 0x90, 0xCC, 0xC3 };
     uint32_t    payload_len = 4;
 
-    NTSTATUS    status;
     HMODULE     ntdll;
     HANDLE      h_section;
     SIZE_T      size = 0x1000;

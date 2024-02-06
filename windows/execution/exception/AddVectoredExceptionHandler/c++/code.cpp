@@ -62,6 +62,9 @@ int main ()
         RemoveVectoredExceptionHandler(h);
     }
 
+    // deallocate the space
+    VirtualFree (runtime, payload_len, MEM_RELEASE);
+
     return 0;
 }
 

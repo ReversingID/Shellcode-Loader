@@ -1,6 +1,6 @@
 # Shellcode Loader
 
-Executing shellcode as a thread.
+Executing shellcode as a fiber.
 
 ### Overview
 

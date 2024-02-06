@@ -7,7 +7,7 @@ Abusing callback to run shellcode.
 Eksekusi shellcode dengan `EnumerateLoadedModules`.
 
 ```c++
-BOOL IMAGEAPI EnumerateLoadedModules (HANDLE hProcess, PENUMLOADED_MODULES_CALLBACK EnumLoadedModulesCallback, PVOID UserContext);
+BOOL EnumerateLoadedModules (HANDLE hProcess, PENUMLOADED_MODULES_CALLBACK EnumLoadedModulesCallback, PVOID UserContext);
 ```
 
 ### Reference 
