@@ -1,0 +1,16 @@
+[package]
+name = "shellcode-loader"
+version = "0.1.0"
+edition = "2021"
+authors = ["Satria Ady Pradana <xathrya@reversing.id>"]
+
+[dependencies.winapi]
+version = "0.3.9"
+features = [
+    "errhandlingapi", 
+    "memoryapi",
+    "processthreadsapi",
+    "synchapi", 
+    "winbase", 
+    "winnt",
+]
