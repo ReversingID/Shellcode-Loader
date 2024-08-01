@@ -1,0 +1,8 @@
+[package]
+name = "shellcode-loader"
+version = "0.1.0"
+edition = "2021"
+authors = ["Satria Ady Pradana <xathrya@reversing.id>"]
+
+[dependencies]
+memmap2 = "0.9.4"
