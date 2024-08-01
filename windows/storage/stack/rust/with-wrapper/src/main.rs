@@ -3,6 +3,7 @@
     Archive of Reversing.ID
 
     Storing payload in stack.
+	Wrap the execution of Windows API function.
 
 Compile:
     $ cargo build
@@ -17,14 +18,11 @@ Note:
 	- use wrapper for allocation and running thread
 */
 
-use std::ptr;
-use std::slice;
-use std::ffi::c_void;
-use windows::Win32::System::Memory;
-use windows::Win32::Foundation;
-use windows::Win32::Foundation::WIN32_ERROR;
-use windows::Win32::System::Threading;
-use windows::Win32::System::WindowsProgramming;
+use std::{ptr, slice, ffi::c_void};
+use windows::Win32::{
+	Foundation::{self, WIN32_ERROR},
+	System::{Memory, Threading, WindowsProgramming},
+};
 
 pub struct DistributeMemory {
 	len: usize,
@@ -91,13 +89,13 @@ impl Thread {
 			tid: 0,
 		};
 		
-		let ep: extern "system" fn(*mut c_void) -> u32 = { std::mem::transmute(start) };
+		let ep: Threading::LPTHREAD_START_ROUTINE = std::mem::transmute(start);
 
         // execute shellcode as new thread
 		th.handle = Threading::CreateThread(
 			ptr::null_mut(),
 			0,
-			Some(ep),
+			ep,
 			ptr::null_mut(),
 			windows::Win32::System::Threading::THREAD_CREATION_FLAGS(0),
 			&mut th.tid,
@@ -124,13 +122,13 @@ pub fn run(shellcode: Vec<u8>) -> Result<(), WIN32_ERROR> {
 	let mut me = DistributeMemory::new(shellcode.len())?;
 	let runtime = me.as_slice_mut();
 	runtime[..shellcode.len()].copy_from_slice(shellcode.as_slice());
-	let t = unsafe {
-		Thread::run(me.as_ptr())
-	}?;
+	
+	// run on new thread
+	let t = unsafe { Thread::run(me.as_ptr()) }?;
 	t.wait()
 }
 
 fn main() {
-    static PAYLOAD: [u8; 4] = *b"\x90\x90\xCC\xC3";
-	run(PAYLOAD.to_vec());
+    static PAYLOAD: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
+	let _ = run(PAYLOAD.to_vec());
 }

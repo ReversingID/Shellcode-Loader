@@ -18,6 +18,7 @@ use std::{mem, process, ptr};
 use winapi::um::{
     errhandlingapi::GetLastError,
     memoryapi::{VirtualAlloc, VirtualFree, VirtualProtect},
+    minwinbase::LPTHREAD_START_ROUTINE,
     processthreadsapi::CreateThread,
     synchapi::WaitForSingleObject,
     winbase::INFINITE,
@@ -31,19 +32,19 @@ use winapi::um::{
 type DWORD = u32;
 
 // todo: can we change the permission?
+// shellcode storage in new executable section
 #[used]
 #[link_section = ".code"]
-static mut PAYLOAD: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
+static mut payload: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
 
 fn main() {
-    // shellcode storage in stack
     let mut old_protect: DWORD = PAGE_READWRITE;
 
     unsafe {
         // allocate memory buffer for payload as READ-WRITE (no executable)
         let runtime = VirtualAlloc(
             ptr::null_mut(),
-            PAYLOAD.len().try_into().unwrap(),
+            payload.len().try_into().unwrap(),
             MEM_COMMIT | MEM_RESERVE,
             PAGE_READWRITE
         );
@@ -54,24 +55,24 @@ fn main() {
         }
 
         // copy payload to the buffer
-        std::ptr::copy(PAYLOAD.as_ptr() as _, runtime, PAYLOAD.len());
+        std::ptr::copy(payload.as_ptr(), runtime.cast(), payload.len());
         
         // make buffer executable (R-X)
         let retval = VirtualProtect (
             runtime,
-            PAYLOAD.len() as usize,
+            payload.len() as usize,
             PAGE_EXECUTE_READ,
             &mut old_protect
         );
 
         if retval != 0 {
             let mut tid = 0;
-            let ep: extern "system" fn(PVOID) -> u32 = { mem::transmute(runtime) };
+            let ep: LPTHREAD_START_ROUTINE = mem::transmute(runtime);
 
             let th_shellcode = CreateThread (
                 ptr::null_mut(),
                 0,
-                Some(ep),
+                ep,
                 ptr::null_mut(),
                 0,
                 &mut tid
@@ -84,6 +85,6 @@ fn main() {
             }
         }
 
-        VirtualFree(runtime, PAYLOAD.len(), MEM_RELEASE);
+        VirtualFree(runtime, payload.len(), MEM_RELEASE);
     }
 }
