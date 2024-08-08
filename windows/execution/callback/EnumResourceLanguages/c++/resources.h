@@ -1,0 +1,1 @@
+#define REVID_STRING 1

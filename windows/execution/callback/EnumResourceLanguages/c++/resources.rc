@@ -1,0 +1,6 @@
+#include "resources.h"
+
+STRINGTABLE
+BEGIN
+    REVID_STRING, "ReversingID"
+END 
