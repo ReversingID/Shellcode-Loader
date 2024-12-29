@@ -18,9 +18,6 @@ Technique:
 #include <stdint.h>
 
 /* ========= some definition ========= */
-#define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
-#define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-
 typedef struct _CLIENT_ID {
     HANDLE UniqueProcess;
     HANDLE UniqueThread;

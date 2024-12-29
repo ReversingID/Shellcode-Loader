@@ -18,9 +18,6 @@ Technique:
 #include <stdint.h>
 
 /* ========= some definition ========= */
-#define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
-#define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-
 typedef struct _UNICODE_STRING {
     USHORT Length;
     USHORT MaximumLength;

@@ -18,9 +18,6 @@ Technique:
 #include <stdint.h>
 
 /* ========= some definition ========= */
-#define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
-#define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
-
 #if defined(_WIN64)
 #define TEB_FIBERDATA_PTR_OFFSET    0x17ee
 #define LPFIBER_IP_OFFSET           0x0a8

@@ -3,7 +3,7 @@
     Encryption with AES using CryptEncrypt
 
 Compile:
-    $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tcgenerate.cpp
+    $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tcgenerator.cpp
 */
 
 #include <windows.h>

