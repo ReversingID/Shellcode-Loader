@@ -6,7 +6,7 @@ Shellcode encryption.
 
 Enkripsi AES menggunakan fungsi `CryptEncrypt` dan dekripsi dengan `CryptDecrypt`.
 
-Fungsi ini termasuk deprecated dan disarankan untuk menggunakan API `Cryptograpy Next Generation`.
+Fungsi ini termasuk deprecated dan disarankan untuk menggunakan API `Cryptographic Next Generation`.
 
 ```c++
 BOOL CryptEncrypt (HCRYPTKEY hKey, HCRYPTHAS hHash, BOOL Final, DWORD dwFlags, BYTE *pbData, DWORD *pdwDataLen, DWORD dwBufLen);
