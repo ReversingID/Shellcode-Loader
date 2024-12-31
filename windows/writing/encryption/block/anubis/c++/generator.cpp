@@ -480,7 +480,6 @@ void encrypt (uint8_t* data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[16
     anubis_t config;
     uint32_t i;
     uint8_t* prev_block;
-    uint8_t  cipher_block[16];
 
     // setup configuration
     config.bits = 128;
@@ -488,7 +487,7 @@ void encrypt (uint8_t* data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[16
     
     prev_block = iv;
 
-    for (i = 0; i < size; i+= 16)
+    for (i = 0; i < size; i += 16)
     {
         // XOR plaintext block with previous ciphertext block
         xor_block(&data[i], &data[i], prev_block);
