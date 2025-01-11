@@ -627,11 +627,11 @@ int main()
 
     // encrypt the shellcode
     memcpy (&payload[alloc_size], iv, BLOCKSIZEB);
-    encrypt (payload, payload_len, key, iv);
+    encrypt (payload, alloc_size, key, iv);
 
     // print
     print_hex("IV", iv, BLOCKSIZEB);
-    print_hex("Payload", payload, payload_len + BLOCKSIZEB);
+    print_hex("Payload", payload, alloc_size + BLOCKSIZEB);
 
     // destroy heap
     HeapFree (GetProcessHeap(), 0, payload);

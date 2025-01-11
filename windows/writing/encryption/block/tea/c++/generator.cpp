@@ -29,8 +29,8 @@ Note:
 
 #define bswap32(x)      (rotl(x,8) & 0x00FF00FF | rotr(x, 8) & 0xFF00FF00)
 
+
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 block data */
 void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
@@ -51,6 +51,7 @@ void print_hex(char* header, uint8_t* data, uint32_t length)
     printf("\n}\n");
     printf("Length: %d\n", length);
 }
+
 
 void block_encrypt (uint8_t * val, uint8_t * key)
 {
