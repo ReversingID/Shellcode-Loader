@@ -10,6 +10,7 @@ Compile:
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* ************************* CONFIGURATION & SEED ************************* */
 #define MIN_N           4
@@ -19,7 +20,8 @@ Compile:
 #define MIN_KEYSIZEB    (4 * MIN_N)
 #define MAX_KEYSIZEB    (4 * MAX_N)
 #define BLOCKSIZE       128
-#define BLOCKSIZEB      (BLOCKSIZE/8)
+#define BLOCKSIZEB      16
+#define KEYSIZE         128
 #define KEYSIZEB        16
 
 
@@ -446,16 +448,14 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R);
-void anubis_setup(anubis_t * config, uint8_t * secret);
+void key_setup(anubis_t * config, uint8_t * secret, uint32_t bits);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 block data */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
@@ -470,94 +470,11 @@ void print_hex(char* header, uint8_t* data, uint32_t length)
         printf("0x%02x, ", data[idx]);
     }
     printf("\n}\n");
-    printf("Length: %lld\n", length);
+    printf("Length: %d\n", length);
 }
 
 
-// Anubis encryption with CBC
-void encrypt (uint8_t* data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[16])
-{
-    anubis_t config;
-    uint32_t i;
-    uint8_t* prev_block;
-
-    // setup configuration
-    config.bits = 128;
-    anubis_setup(&config, key);
-    
-    prev_block = iv;
-
-    for (i = 0; i < size; i += 16)
-    {
-        // XOR plaintext block with previous ciphertext block
-        xor_block(&data[i], &data[i], prev_block);
-
-        // encrypt plaintext
-        anubis_crypt(&data[i], config.rkeys_enc, config.R);
-
-        // store ciphertext block for next XOR operation
-        prev_block = &data[i];
-    }
-}
-
-int main()
-{
-    HANDLE f;
-    SIZE_T payload_len;
-    SIZE_T remainder, multiple = 16;
-    DWORD  nread;
-
-    uint8_t * payload;
-    uint32_t  nitem = 0;
-
-    // static key because the key is awesome
-    uint8_t   key[] = 
-            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
-    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
-              0x31, 0x33, 0x33, 0x37 };
-            /*  1     3     3     7  */
-
-    // generate IV, this example is not cryptographically secure
-    uint8_t   iv[16];
-
-    srand(time(0));
-    for (int i = 0; i < 16; i++)
-        iv[i] = rand() % 0xFF;
-
-    // open existing file
-    f = CreateFile ("shellcode.bin", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    // query the size and create enough space in heap
-    payload_len = GetFileSize (f, NULL);
-    remainder   = payload_len % multiple;
-    if (remainder)
-        payload_len += (multiple - remainder);
-    nitem = 2 * payload_len / multiple;
-
-    // add space for IV
-    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len + 16);
-
-    // read the shellcode
-    ReadFile(f, payload, payload_len, &nread, NULL);
-
-    // fill the remainder with 0x90 (nop)
-    // this is specific to x86 assembly
-    for (int i = 0; i < (multiple - remainder); i++)
-        payload[payload_len - 1 - i] = 0x90;
-
-    // encrypt the shellcode
-    encrypt (payload, payload_len, key, iv);
-    memcpy (&payload[payload_len], iv, 16);
-
-    // print
-    print_hex("IV", iv, 16);
-    print_hex("Payload", payload, payload_len + 16);
-
-    // destroy heap
-    HeapFree (GetProcessHeap(), 0, payload);
-}
-
-void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R)
+void block_encrypt(uint8_t val[BLOCKSIZEB], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R)
 {
     int i, pos, r;
     uint32_t state[4];
@@ -646,13 +563,89 @@ void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int 
     }
 }
 
-void anubis_setup(anubis_t * config, uint8_t * secret)
+// Anubis encryption with CBC
+void encrypt (uint8_t * data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[BLOCKSIZEB])
+{
+    anubis_t config;
+    uint32_t i;
+    uint8_t* prev_block;
+
+    // setup configuration
+    key_setup(&config, key, KEYSIZE);
+    
+    prev_block = iv;
+
+    for (i = 0; i < size; i += BLOCKSIZEB)
+    {
+        // XOR plaintext block with previous ciphertext block
+        xor_block(&data[i], &data[i], prev_block);
+
+        // encrypt plaintext
+        block_encrypt(&data[i], config.rkeys_enc, config.R);
+
+        // store ciphertext block for next XOR operation
+        prev_block = &data[i];
+    }
+}
+
+int main()
+{
+    HANDLE f;
+    SIZE_T payload_len, alloc_size, remainder;
+    DWORD  nread;
+
+    uint8_t * payload;
+
+    // static key because the key is awesome
+    uint8_t   key[] = 
+            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
+    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
+              0x31, 0x33, 0x33, 0x37 };
+            /*  1     3     3     7  */
+
+    // generate IV, this example is not cryptographically secure
+    uint8_t   iv[BLOCKSIZEB];
+
+    srand(time(0));
+    for (int i = 0; i < BLOCKSIZEB; i++)
+        iv[i] = rand() % 0xFF;
+
+    // open existing file
+    f = CreateFile ("shellcode.bin", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    // query the size and create enough space in heap
+    payload_len = GetFileSize (f, NULL);
+    remainder   = payload_len % BLOCKSIZEB;
+    alloc_size  = payload_len + (remainder ? BLOCKSIZEB - remainder : 0);
+
+    // add space for IV
+    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, alloc_size + BLOCKSIZEB);
+
+    // read the shellcode
+    memset(payload, 0x90, alloc_size);
+    ReadFile(f, payload, payload_len, &nread, NULL);
+
+    // encrypt the shellcode
+    memcpy (&payload[alloc_size], iv, BLOCKSIZEB);
+    encrypt (payload, payload_len, key, iv);
+
+    // print
+    print_hex("IV", iv, BLOCKSIZEB);
+    print_hex("Payload", payload, payload_len + BLOCKSIZEB);
+
+    // destroy heap
+    HeapFree (GetProcessHeap(), 0, payload);
+}
+
+
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
+void key_setup(anubis_t * config, uint8_t * secret, uint32_t bits)
 {
     int N, R, i, pos, r;
     uint32_t kappa[MAX_N];
     uint32_t inter[MAX_N];
 
-    config->bits = KEYSIZEB * 8;
+    config->bits = bits;
 
     /* calculate the parameter N */
     N = config->bits >> 5;

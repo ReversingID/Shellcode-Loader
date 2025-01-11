@@ -10,14 +10,19 @@ Compile:
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* ************************ CONFIGURATION & SEED ************************ */
+#define KEYSIZE         128
+#define KEYSIZEB        16
+#define BLOCKSIZE       128
+#define BLOCKSIZEB      16
+
 #define clefia_mul4(x)  (clefia_mul2(clefia_mul2((x))))
 #define clefia_mul6(x)  (clefia_mul2((x)) ^ clefia_mul4((x)))
 #define clefia_mul8(x)  (clefia_mul2(clefia_mul4((x))))
 #define clefia_mulA(x)  (clefia_mul2((x)) ^ clefia_mul8((x)))
 
-#define KEYSIZE 16
 
 /* Key generation */
 uint8_t S0[256] = 
@@ -102,7 +107,8 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen);
+void key_setup(clefia_t * config, uint8_t secret[KEYSIZEB], uint32_t bits);
+
 void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen);
 void byte_xor(uint8_t * dst, const uint8_t * a, const uint8_t * b, uint32_t bytelen);
 
@@ -114,16 +120,12 @@ void clefia_gfn4_inv(uint8_t * y, const uint8_t * x, const uint8_t * rk, int32_t
 void clefia_double_swap(uint8_t * lk);
 void clefia_con_set(uint8_t * con, const uint8_t * iv, int32_t lk);
 
-void clefia_encrypt(clefia_t * config, uint8_t val[16]);
-void clefia_setup(clefia_t * config, uint8_t secret[16]);
-
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
@@ -138,29 +140,48 @@ void print_hex(char* header, uint8_t* data, uint32_t length)
         printf("0x%02x, ", data[idx]);
     }
     printf("\n}\n");
-    printf("Length: %lld\n", length);
+    printf("Length: %d\n", length);
 }
 
 
+void block_encrypt (clefia_t * config, uint8_t val[BLOCKSIZEB])
+{
+    uint8_t   rin[BLOCKSIZEB], rout[BLOCKSIZEB];
+    uint8_t * rkeys = config->rkeys;
+
+    byte_copy(rin, val, BLOCKSIZEB);
+
+    byte_xor(rin +  4, rin +  4, rkeys    , 4);                     /* initial key whitening */
+    byte_xor(rin + 12, rin + 12, rkeys + 4, 4);
+    rkeys += 8;
+
+    clefia_gfn4(rout, rin, rkeys, config->round);                   /* GFN_{4, r} */
+
+    byte_copy(val, rout, BLOCKSIZEB);
+
+    byte_xor(val +  4, val +  4, rkeys + config->round * 8    , 4); /* final key whitening */
+    byte_xor(val + 12, val + 12, rkeys + config->round * 8 + 4, 4);
+}
+
 // CLEFIA encryption with CBC
-void encrypt(uint8_t * data, uint32_t size, uint8_t key[16], uint8_t iv[16])
+void encrypt(uint8_t * data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[BLOCKSIZEB])
 {
     clefia_t config;
     uint32_t  i;
     uint8_t * prev_block;
 
     // setup configuration
-    clefia_setup(&config, key);
+    key_setup(&config, key, KEYSIZE);
 
     prev_block = iv;
 
-    for (i = 0; i < size; i += 16)
+    for (i = 0; i < size; i += BLOCKSIZEB)
     {
         // XOR plaintext with previous ciphertext block
         xor_block(&data[i], &data[i], prev_block);
 
         // encrypt plaintext
-        clefia_encrypt(&config, &data[i]);
+        block_encrypt(&config, &data[i]);
 
         // store ciphertext block for next XOR operation
         prev_block = &data[i];
@@ -170,8 +191,7 @@ void encrypt(uint8_t * data, uint32_t size, uint8_t key[16], uint8_t iv[16])
 int main()
 {
     HANDLE f;
-    SIZE_T payload_len;
-    SIZE_T remainder, multiple = 16;
+    SIZE_T payload_len, alloc_size, remainder;
     DWORD  nread;
 
     uint8_t * payload;
@@ -185,10 +205,10 @@ int main()
             /*  1     3     3     7  */
 
     // generate IV, this example is not cryptographically secure
-    uint8_t   iv[16];
+    uint8_t   iv[BLOCKSIZEB];
 
     srand(time(0));
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < BLOCKSIZEB; i++)
         iv[i] = rand() % 0xFF;
 
     // open existing file
@@ -196,25 +216,19 @@ int main()
 
     // query the size and create enough space in heap
     payload_len = GetFileSize (f, NULL);
-    remainder   = payload_len % multiple;
-    if (remainder)
-        payload_len += (multiple - remainder);
-    nitem = 2 * payload_len / multiple;
+    remainder   = payload_len % BLOCKSIZEB;
+    alloc_size  = payload_len + (remainder ? BLOCKSIZEB - remainder : 0);
 
     // add space for IV
-    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len + 16);
+    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, alloc_size + 16);
 
     // read the shellcode
+    memset(payload, 0x90, alloc_size);
     ReadFile(f, payload, payload_len, &nread, NULL);
 
-    // fill the remainder with 0x90 (nop)
-    // this is specific to x86 assembly
-    for (int i = 0; i < (multiple - remainder); i++)
-        payload[payload_len - 1 - i] = 0x90;
-
     // encrypt the shellcode
+    memcpy (&payload[alloc_size], iv, BLOCKSIZEB);
     encrypt (payload, payload_len, key, iv);
-    memcpy (&payload[payload_len], iv, 16);
 
     // print
     print_hex("IV", iv, 16);
@@ -224,27 +238,10 @@ int main()
     HeapFree (GetProcessHeap(), 0, payload);
 }
 
-void clefia_encrypt (clefia_t * config, uint8_t val[16])
-{
-    uint8_t   rin[16], rout[16];
-    uint8_t * rkeys = config->rkeys;
 
-    byte_copy(rin, val, 16);
-
-    byte_xor(rin +  4, rin +  4, rkeys    , 4);                     /* initial key whitening */
-    byte_xor(rin + 12, rin + 12, rkeys + 4, 4);
-    rkeys += 8;
-
-    clefia_gfn4(rout, rin, rkeys, config->round);                   /* GFN_{4, r} */
-
-    byte_copy(val, rout, 16);
-
-    byte_xor(val +  4, val +  4, rkeys + config->round * 8    , 4); /* final key whitening */
-    byte_xor(val + 12, val + 12, rkeys + config->round * 8 + 4, 4);
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 // derive round-key from secret key
-void clefia_setup (clefia_t * config, uint8_t secret[16])
+void key_setup (clefia_t * config, uint8_t secret[KEYSIZEB], uint32_t bits)
 {
     const uint8_t iv[2] = { 0x42U, 0x8AU };    /* akar pangkat tiga dari 2 */
     uint8_t * rkeys = config->rkeys;
@@ -272,11 +269,12 @@ void clefia_setup (clefia_t * config, uint8_t secret[16])
     }
     byte_copy(rkeys, secret + 8, 8); /* final whitening key (WK2, WK3) */
     config->round = 18;
+    config->bits  = bits;
 }
 
 /* ******************* INTERNAL FUNCTIONS IMPLEMENTATION ******************* */
 /* copy data block byte by byte */
-void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen)
+void byte_copy(uint8_t * dst, const uint8_t * src, uint32_t bytelen)
 {
     while (bytelen--) *dst++ = *src++;
 }

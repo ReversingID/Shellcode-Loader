@@ -28,12 +28,16 @@ Note:
 #include <stdlib.h>
 
 /* ************************ CONFIGURATION & SEED ************************ */
-#define ROUND 16
-#define LINE  4
+#define KEYSIZE     128
+#define KEYSIZEB    16
+#define BLOCKSIZE   128
+#define BLOCKSIZEB  16
+#define ROUNDS      16
+#define LINE        4
 
-#define IK0   0
-#define IK4   ROUND*16+16
-#define EK0   IK0+16
+#define IK0         0
+#define IK4         ROUNDS*16+16
+#define EK0         IK0+16
 
 
 /* Key generation */
@@ -113,48 +117,98 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-static void F(uint32_t, uint32_t, uint32_t*, uint32_t*, uint32_t*);
+void key_setup (unicorn_t * config, uint8_t secret[KEYSIZEB]);
 
-void unicorn_decrypt (unicorn_t * config, uint8_t val[16]);
-void unicorn_setup (unicorn_t * config, uint8_t secret[16]);
+static void F(uint32_t, uint32_t, uint32_t*, uint32_t*, uint32_t*);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
 
+void block_decrypt (unicorn_t * config, uint8_t val[BLOCKSIZEB])
+{
+    uint32_t wx[4], tmp[2];
+    int32_t  i;
+    
+    for (i = 0; i < 4; i++)
+    {
+        wx[i]  = val[i * 4] << 24;
+        wx[i] |= val[i * 4 + 1] << 16;
+        wx[i] |= val[i * 4 + 2] << 8;
+        wx[i] |= val[i * 4 + 3];
+    }
+
+    for (i = 0; i < 4; i++)
+        wx[i] += *((uint32_t*) &config->rkeys[IK4 + i * 4]);
+    
+    for (i = ROUNDS - 1; i >= 0; i--)
+    {
+        F(wx[2], wx[3], (uint32_t*) &config->rkeys[EK0 + i * 16], &tmp[0], &tmp[1]);
+
+        tmp[0] ^= wx[0];
+        tmp[1] ^= wx[1];
+    
+        wx[0] = wx[2];
+        wx[1] = wx[3];
+        wx[2] = tmp[0];
+        wx[3] = tmp[1];
+    }
+
+    wx[0]  -= *((uint32_t*) &config->rkeys[IK0 + 8]);
+    wx[1]  -= *((uint32_t*) &config->rkeys[IK0 + 12]);
+    wx[2]  -= *((uint32_t*) &config->rkeys[IK0]);
+    wx[3]  -= *((uint32_t*) &config->rkeys[IK0 + 4]);
+
+    val[0]  = (uint8_t) (wx[2] >> 24);
+    val[1]  = (uint8_t) (wx[2] >> 16);
+    val[2]  = (uint8_t) (wx[2] >> 8);
+    val[3]  = (uint8_t)  wx[2];
+    val[4]  = (uint8_t) (wx[3] >> 24);
+    val[5]  = (uint8_t) (wx[3] >> 16);
+    val[6]  = (uint8_t) (wx[3] >> 8);
+    val[7]  = (uint8_t)  wx[3];
+    val[8]  = (uint8_t) (wx[0] >> 24);
+    val[9]  = (uint8_t) (wx[0] >> 16);
+    val[10] = (uint8_t) (wx[0] >> 8);
+    val[11] = (uint8_t)  wx[0];
+    val[12] = (uint8_t) (wx[1] >> 24);
+    val[13] = (uint8_t) (wx[1] >> 16);
+    val[14] = (uint8_t) (wx[1] >> 8);
+    val[15] = (uint8_t)  wx[1];
+}
+
 // CIPHERUNICORN-A decryption with CBC
-void decrypt(uint8_t * data, uint32_t size, uint8_t key[16], uint8_t iv[16])
+void decrypt(uint8_t * data, uint32_t size, uint8_t key[BLOCKSIZEB], uint8_t iv[BLOCKSIZEB])
 {
     unicorn_t config;
     uint32_t  i;
-    uint8_t   prev_block[16];
-    uint8_t   cipher_block[16];
+    uint8_t   prev_block[BLOCKSIZEB];
+    uint8_t   cipher_block[BLOCKSIZEB];
 
     // setup configuration
-    unicorn_setup(&config, key);
+    key_setup(&config, key);
 
-    memcpy(prev_block, iv, 16);
+    memcpy(prev_block, iv, BLOCKSIZEB);
 
-    for (i = 0; i < size; i += 16)
+    for (i = 0; i < size; i += BLOCKSIZEB)
     {
         // copy to temporary block
-        memcpy(cipher_block, &data[i], 16);
+        memcpy(cipher_block, &data[i], BLOCKSIZEB);
 
         // decrypt the block
-        unicorn_decrypt(&config, &data[i]);
+        block_decrypt(&config, &data[i]);
 
         // XOR the previous ciphertext with current block
         xor_block(&data[i],&data[i], prev_block);
 
         // copy the current ciphertext as previous block
-        memcpy(prev_block, cipher_block, 16);
+        memcpy(prev_block, cipher_block, BLOCKSIZEB);
     }
 }
 
@@ -203,63 +257,13 @@ int main ()
     return 0;
 }
 
-void unicorn_decrypt (unicorn_t * config, uint8_t val[16])
-{
-    uint32_t wx[4], tmp[2];
-    int32_t  i;
-    
-    for (i = 0; i < 4; i++)
-    {
-        wx[i]  = val[i * 4] << 24;
-        wx[i] |= val[i * 4 + 1] << 16;
-        wx[i] |= val[i * 4 + 2] << 8;
-        wx[i] |= val[i * 4 + 3];
-    }
 
-    for (i = 0; i < 4; i++)
-        wx[i] += *((uint32_t*) &config->rkeys[IK4 + i * 4]);
-    
-    for (i = ROUND - 1; i >= 0; i--)
-    {
-        F(wx[2], wx[3], (uint32_t*) &config->rkeys[EK0 + i * 16], &tmp[0], &tmp[1]);
-
-        tmp[0] ^= wx[0];
-        tmp[1] ^= wx[1];
-    
-        wx[0] = wx[2];
-        wx[1] = wx[3];
-        wx[2] = tmp[0];
-        wx[3] = tmp[1];
-    }
-
-    wx[0]  -= *((uint32_t*) &config->rkeys[IK0 + 8]);
-    wx[1]  -= *((uint32_t*) &config->rkeys[IK0 + 12]);
-    wx[2]  -= *((uint32_t*) &config->rkeys[IK0]);
-    wx[3]  -= *((uint32_t*) &config->rkeys[IK0 + 4]);
-
-    val[0]  = (uint8_t) (wx[2] >> 24);
-    val[1]  = (uint8_t) (wx[2] >> 16);
-    val[2]  = (uint8_t) (wx[2] >> 8);
-    val[3]  = (uint8_t)  wx[2];
-    val[4]  = (uint8_t) (wx[3] >> 24);
-    val[5]  = (uint8_t) (wx[3] >> 16);
-    val[6]  = (uint8_t) (wx[3] >> 8);
-    val[7]  = (uint8_t)  wx[3];
-    val[8]  = (uint8_t) (wx[0] >> 24);
-    val[9]  = (uint8_t) (wx[0] >> 16);
-    val[10] = (uint8_t) (wx[0] >> 8);
-    val[11] = (uint8_t)  wx[0];
-    val[12] = (uint8_t) (wx[1] >> 24);
-    val[13] = (uint8_t) (wx[1] >> 16);
-    val[14] = (uint8_t) (wx[1] >> 8);
-    val[15] = (uint8_t)  wx[1];
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 // derive round-key from secret key
-void unicorn_setup (unicorn_t * config, uint8_t secret[16])
+void key_setup (unicorn_t * config, uint8_t secret[BLOCKSIZEB])
 {
-    uint32_t wk[LINE], ek[ROUND * 4 + 8];
-    int32_t  i, j, n = ROUND + 2;
+    uint32_t wk[LINE], ek[ROUNDS * 4 + 8];
+    int32_t  i, j, n = ROUNDS + 2;
     int32_t  counter = 0;
 
     for (i = 0; i < LINE; i++)
@@ -274,7 +278,7 @@ void unicorn_setup (unicorn_t * config, uint8_t secret[16])
         }
     }
 
-    for (i = 0; i < 16 * ((ROUND + 2) / 2); i += 16)
+    for (i = 0; i < 16 * ((ROUNDS + 2) / 2); i += 16)
     {
         for (j = i; j < (i + 8); j++)
         {

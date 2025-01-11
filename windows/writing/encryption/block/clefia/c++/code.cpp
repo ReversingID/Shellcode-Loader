@@ -28,12 +28,16 @@ Note:
 #include <stdlib.h>
 
 /* ************************ CONFIGURATION & SEED ************************ */
+#define KEYSIZE         128
+#define KEYSIZEB        16
+#define BLOCKSIZE       128
+#define BLOCKSIZEB      16
+
 #define clefia_mul4(x)  (clefia_mul2(clefia_mul2((x))))
 #define clefia_mul6(x)  (clefia_mul2((x)) ^ clefia_mul4((x)))
 #define clefia_mul8(x)  (clefia_mul2(clefia_mul4((x))))
 #define clefia_mulA(x)  (clefia_mul2((x)) ^ clefia_mul8((x)))
 
-#define KEYSIZE 16
 
 /* Key generation */
 uint8_t S0[256] = 
@@ -118,7 +122,8 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen);
+void key_setup(clefia_t * config, uint8_t secret[KEYSIZEB], uint32_t bits);
+
 void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen);
 void byte_xor(uint8_t * dst, const uint8_t * a, const uint8_t * b, uint32_t bytelen);
 
@@ -131,46 +136,61 @@ void clefia_gfn4_inv(uint8_t * y, const uint8_t * x, const uint8_t * rk, int32_t
 void clefia_double_swap(uint8_t * lk);
 void clefia_con_set(uint8_t * con, const uint8_t * iv, int32_t lk);
 
-void clefia_decrypt(clefia_t * config, uint8_t val[16]);
-void clefia_setup(clefia_t * config, uint8_t secret[16]);
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
 
+void block_decrypt (clefia_t * config, uint8_t val[BLOCKSIZEB])
+{
+    uint8_t   rin[BLOCKSIZEB], rout[BLOCKSIZEB];
+    uint8_t * rkeys = config->rkeys;
+
+    byte_copy(rin, val, BLOCKSIZEB);
+
+    byte_xor(rin +  4, rin +  4, rkeys + config->round * 8 +  8, 4);    /* initial key whitening */
+    byte_xor(rin + 12, rin + 12, rkeys + config->round * 8 + 12, 4);
+    rkeys += 8;
+
+    clefia_gfn4_inv(rout, rin, rkeys, config->round);                   /* GFN_{4, r} */
+
+    byte_copy(val, rout, BLOCKSIZEB);
+
+    byte_xor(val +  4, val +  4, rkeys - 8, 4);                     /* final key whitening */
+    byte_xor(val + 12, val + 12, rkeys - 4, 4);
+}
+
 // CLEFIA decryption with CBC
-void decrypt(uint8_t * data, uint32_t size, uint8_t key[KEYSIZE], uint8_t iv[16])
+void decrypt(uint8_t * data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[BLOCKSIZEB])
 {
     clefia_t config;
     uint32_t  i;
-    uint8_t   prev_block[16];
-    uint8_t   cipher_block[16];
+    uint8_t   prev_block[BLOCKSIZEB];
+    uint8_t   cipher_block[BLOCKSIZEB];
 
     // setup configuration
-    config.bits = 128;
-    clefia_setup(&config, key);
+    key_setup(&config, key, KEYSIZE);
 
-    memcpy(prev_block, iv, 16);
+    memcpy(prev_block, iv, BLOCKSIZEB);
 
-    for (i = 0; i < size; i += 16)
+    for (i = 0; i < size; i += BLOCKSIZEB)
     {
         // copy to temporary block
-        memcpy(cipher_block, &data[i], 16);
+        memcpy(cipher_block, &data[i], BLOCKSIZEB);
 
         // decrypt the block
-        clefia_decrypt(&config, &data[i]);
+        block_decrypt(&config, &data[i]);
 
         // XOR the previous ciphertext with current ciphertext block
         xor_block(&data[i], &data[i], prev_block);
 
         // copy the current ciphertext as previous block
-        memcpy(prev_block, cipher_block, 16); 
+        memcpy(prev_block, cipher_block, BLOCKSIZEB); 
     }
 }
 
@@ -219,27 +239,10 @@ int main ()
     return 0;
 }
 
-void clefia_decrypt (clefia_t * config, uint8_t val[16])
-{
-    uint8_t   rin[16], rout[16];
-    uint8_t * rkeys = config->rkeys;
 
-    byte_copy(rin, val, 16);
-
-    byte_xor(rin +  4, rin +  4, rkeys + config->round * 8 +  8, 4);    /* initial key whitening */
-    byte_xor(rin + 12, rin + 12, rkeys + config->round * 8 + 12, 4);
-    rkeys += 8;
-
-    clefia_gfn4_inv(rout, rin, rkeys, config->round);                   /* GFN_{4, r} */
-
-    byte_copy(val, rout, 16);
-
-    byte_xor(val +  4, val +  4, rkeys - 8, 4);                     /* final key whitening */
-    byte_xor(val + 12, val + 12, rkeys - 4, 4);
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 // derive round-key from secret key
-void clefia_setup (clefia_t * config, uint8_t secret[16])
+void key_setup (clefia_t * config, uint8_t secret[KEYSIZEB], uint32_t bits)
 {
     const uint8_t iv[2] = { 0x42U, 0x8AU };    /* akar pangkat tiga dari 2 */
     uint8_t * rkeys = config->rkeys;
@@ -267,12 +270,13 @@ void clefia_setup (clefia_t * config, uint8_t secret[16])
     }
     byte_copy(rkeys, secret + 8, 8); /* final whitening key (WK2, WK3) */
     config->round = 18;
+    config->bits  = bits;
 }
 
 
 /* ******************* INTERNAL FUNCTIONS IMPLEMENTATION ******************* */
 /* copy data block byte by byte */
-void byte_copy(uint8_t *dst, const uint8_t * src, uint32_t bytelen)
+void byte_copy(uint8_t * dst, const uint8_t * src, uint32_t bytelen)
 {
     while (bytelen--) *dst++ = *src++;
 }

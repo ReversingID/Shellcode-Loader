@@ -89,7 +89,6 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void block_encrypt(camellia_t * config, uint8_t val[BLOCKSIZEB]);
 void key_setup(camellia_t * config, uint8_t secret[32], uint32_t bits);
 
 void swap_half(uint8_t x[16]);
@@ -101,7 +100,6 @@ void fl_layer(uint8_t x[16], const uint8_t kl[16], const uint8_t kr[16]);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
 void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
@@ -121,6 +119,57 @@ void print_hex(char* header, uint8_t * data, uint32_t length)
     }
     printf("\n}\n");
     printf("Length: %d\n", length);
+}
+
+
+void block_encrypt (camellia_t * config, uint8_t val[BLOCKSIZEB])
+{
+    uint32_t i;
+    uint8_t  c[BLOCKSIZEB];
+
+    xor_block(c, val, config->ekeys);
+
+    for (i = 0; i < 3; i++)
+    {
+        feistel(c + 8, c    , config->ekeys + 16 + (i << 4));
+        feistel(c    , c + 8, config->ekeys + 24 + (i << 4));
+    }
+
+    fl_layer(c, config->ekeys + 64, config->ekeys + 72);
+
+    for (i = 0; i < 3; i++)
+    {
+        feistel(c + 8, c    , config->ekeys + 80 + (i << 4));
+        feistel(c    , c + 8, config->ekeys + 88 + (i << 4));
+    }
+
+    fl_layer(c, config->ekeys + 128, config->ekeys + 136);
+
+    for (i = 0; i < 3; i++)
+    {
+        feistel(c + 8, c    , config->ekeys + 144 + (i << 4));
+        feistel(c    , c + 8, config->ekeys + 152 + (i << 4));
+    }
+
+    if (config->bits == 128)
+    {
+        swap_half(c);
+        xor_block(c, config->ekeys + 192, c);
+    }
+    else 
+    {
+        fl_layer(c, config->ekeys + 192, config->ekeys + 200);
+
+        for (i = 0; i < 3; i++)
+        {
+            feistel(c + 8, c    , config->ekeys + 208 + (i << 4));
+            feistel(c    , c + 8, config->ekeys + 216 + (i << 4));
+        }
+
+        swap_half(c);
+        xor_block(c, config->ekeys + 256, c);
+    }
+    memcpy(val, c, BLOCKSIZEB);
 }
 
 void encrypt (uint8_t * data, uint32_t size, uint8_t * key, uint8_t * iv)
@@ -194,56 +243,8 @@ int main()
     HeapFree (GetProcessHeap(), 0, payload);
 }
 
-void block_encrypt (camellia_t * config, uint8_t val[BLOCKSIZEB])
-{
-    uint32_t i;
-    uint8_t  c[BLOCKSIZEB];
 
-    xor_block(c, val, config->ekeys);
-
-    for (i = 0; i < 3; i++)
-    {
-        feistel(c + 8, c    , config->ekeys + 16 + (i << 4));
-        feistel(c    , c + 8, config->ekeys + 24 + (i << 4));
-    }
-
-    fl_layer(c, config->ekeys + 64, config->ekeys + 72);
-
-    for (i = 0; i < 3; i++)
-    {
-        feistel(c + 8, c    , config->ekeys + 80 + (i << 4));
-        feistel(c    , c + 8, config->ekeys + 88 + (i << 4));
-    }
-
-    fl_layer(c, config->ekeys + 128, config->ekeys + 136);
-
-    for (i = 0; i < 3; i++)
-    {
-        feistel(c + 8, c    , config->ekeys + 144 + (i << 4));
-        feistel(c    , c + 8, config->ekeys + 152 + (i << 4));
-    }
-
-    if (config->bits == 128)
-    {
-        swap_half(c);
-        xor_block(c, config->ekeys + 192, c);
-    }
-    else 
-    {
-        fl_layer(c, config->ekeys + 192, config->ekeys + 200);
-
-        for (i = 0; i < 3; i++)
-        {
-            feistel(c + 8, c    , config->ekeys + 208 + (i << 4));
-            feistel(c    , c + 8, config->ekeys + 216 + (i << 4));
-        }
-
-        swap_half(c);
-        xor_block(c, config->ekeys + 256, c);
-    }
-    memcpy(val, c, BLOCKSIZEB);
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 void key_setup(camellia_t * config, uint8_t secret[32], uint32_t bits)
 {
     uint8_t  t[64];

@@ -4,7 +4,7 @@ Transform the shellcode with custom algorithm.
 
 ### Overview
 
-Menggunakan prinsip `Feistel Network` untuk mengenkripsi shellcode. Sebuah key disimpan sebagai byte eprtama dan digunakan berulang untuk setiap operasi pada Feistel.
+Menggunakan prinsip `Feistel Network` untuk mengenkripsi shellcode. Sebuah key disimpan sebagai byte pertama dan digunakan berulang untuk setiap operasi pada Feistel.
 
 Shellcode yang tersimpan memiliki format `[Key] [Encoded Shellcode]`.
 

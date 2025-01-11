@@ -100,7 +100,6 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void block_decrypt (safer_t * config, uint8_t * data);
 void key_setup (safer_t * config, uint8_t * key, const uint32_t length);
 
 void do_fr (uint8_t val[BLOCKSIZEB], uint8_t * kp);
@@ -108,7 +107,6 @@ void do_ir (uint8_t val[BLOCKSIZEB], uint8_t * kp);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
 void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
@@ -116,6 +114,65 @@ void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
         dst[i] = src1[i] ^ src2[i];
 }
 
+
+void block_decrypt(safer_t * config, uint8_t * data)
+{
+    uint32_t   block[16];
+    uint32_t * __data = (uint32_t*)data;
+    uint32_t   i, m;
+    uint8_t  * kp;
+    uint8_t  * blk    = (uint8_t*)block;
+
+    for (i = 0, m = BLOCKSIZEB/4; i < m; i++)
+        block[i] = __data[m - i - 1];
+
+    kp = config->l_key + 16 * config->k_bytes;
+
+    blk[0] ^= kp[0];
+	blk[1] -= kp[1];
+	blk[2] -= kp[2];
+	blk[3] ^= kp[3];
+	blk[4] ^= kp[4];
+	blk[5] -= kp[5];
+	blk[6] -= kp[6];
+	blk[7] ^= kp[7];
+	blk[8] ^= kp[8];
+	blk[9] -= kp[9];
+	blk[10] -= kp[10];
+	blk[11] ^= kp[11];
+	blk[12] ^= kp[12];
+	blk[13] -= kp[13];
+	blk[14] -= kp[14];
+	blk[15] ^= kp[15];
+
+    if (config->k_bytes > 24) {
+        do_ir(blk, config->l_key + 480);
+        do_ir(blk, config->l_key + 448);
+        do_ir(blk, config->l_key + 416);
+        do_ir(blk, config->l_key + 384);
+    }
+
+    if (config->k_bytes > 16) {
+        do_ir(blk, config->l_key + 352);
+        do_ir(blk, config->l_key + 320);
+        do_ir(blk, config->l_key + 288);
+        do_ir(blk, config->l_key + 256);
+    }
+
+    do_ir(blk, config->l_key + 224);
+    do_ir(blk, config->l_key + 192);
+	do_ir(blk, config->l_key + 160);
+	do_ir(blk, config->l_key + 128);
+	do_ir(blk, config->l_key + 96);
+	do_ir(blk, config->l_key + 64);
+	do_ir(blk, config->l_key + 32);
+	do_ir(blk, config->l_key);
+
+    __data[3] = block[0];
+	__data[2] = block[1];
+	__data[1] = block[2];
+	__data[0] = block[3];
+}
 
 // SAFER+ decryption with CBC
 void decrypt(uint8_t * data, uint32_t size, uint8_t * key, uint8_t * iv)
@@ -191,65 +248,8 @@ int main ()
     return 0;
 }
 
-void block_decrypt(safer_t * config, uint8_t * data)
-{
-    uint32_t   block[16];
-    uint32_t * __data = (uint32_t*)data;
-    uint32_t   i, m;
-    uint8_t  * kp;
-    uint8_t  * blk    = (uint8_t*)block;
 
-    for (i = 0, m = BLOCKSIZEB/4; i < m; i++)
-        block[i] = __data[m - i - 1];
-
-    kp = config->l_key + 16 * config->k_bytes;
-
-    blk[0] ^= kp[0];
-	blk[1] -= kp[1];
-	blk[2] -= kp[2];
-	blk[3] ^= kp[3];
-	blk[4] ^= kp[4];
-	blk[5] -= kp[5];
-	blk[6] -= kp[6];
-	blk[7] ^= kp[7];
-	blk[8] ^= kp[8];
-	blk[9] -= kp[9];
-	blk[10] -= kp[10];
-	blk[11] ^= kp[11];
-	blk[12] ^= kp[12];
-	blk[13] -= kp[13];
-	blk[14] -= kp[14];
-	blk[15] ^= kp[15];
-
-    if (config->k_bytes > 24) {
-        do_ir(blk, config->l_key + 480);
-        do_ir(blk, config->l_key + 448);
-        do_ir(blk, config->l_key + 416);
-        do_ir(blk, config->l_key + 384);
-    }
-
-    if (config->k_bytes > 16) {
-        do_ir(blk, config->l_key + 352);
-        do_ir(blk, config->l_key + 320);
-        do_ir(blk, config->l_key + 288);
-        do_ir(blk, config->l_key + 256);
-    }
-
-    do_ir(blk, config->l_key + 224);
-    do_ir(blk, config->l_key + 192);
-	do_ir(blk, config->l_key + 160);
-	do_ir(blk, config->l_key + 128);
-	do_ir(blk, config->l_key + 96);
-	do_ir(blk, config->l_key + 64);
-	do_ir(blk, config->l_key + 32);
-	do_ir(blk, config->l_key);
-
-    __data[3] = block[0];
-	__data[2] = block[1];
-	__data[1] = block[2];
-	__data[0] = block[3];
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 /*
     Key scheduling and setup the configuration
     Internally key will be casted as integer.

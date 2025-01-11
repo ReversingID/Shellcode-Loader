@@ -12,12 +12,16 @@ Compile:
 #include <stdlib.h>
 
 /* ************************ CONFIGURATION & SEED ************************ */
-#define ROUND 16
-#define LINE  4
+#define KEYSIZE     128
+#define KEYSIZEB    16
+#define BLOCKSIZE   128
+#define BLOCKSIZEB  16
+#define ROUNDS      16
+#define LINE        4
 
-#define IK0   0
-#define IK4   ROUND*16+16
-#define EK0   IK0+16
+#define IK0         0
+#define IK4         ROUND*16+16
+#define EK0         IK0+16
 
 
 /* Key generation */
@@ -97,18 +101,16 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-static void F(uint32_t, uint32_t, uint32_t*, uint32_t*, uint32_t*);
+void key_setup (unicorn_t * config, uint8_t secret[KEYSIZEB]);
 
-void unicorn_encrypt (unicorn_t * config, uint8_t val[16]);
-void unicorn_setup (unicorn_t * config, uint8_t secret[32]);
+static void F(uint32_t, uint32_t, uint32_t*, uint32_t*, uint32_t*);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
@@ -127,89 +129,7 @@ void print_hex(char* header, uint8_t* data, uint32_t length)
 }
 
 
-// CIPHERUNICORN-A encryption with CBC
-void encrypt(uint8_t * data, uint32_t size, uint8_t key[16], uint8_t iv[16])
-{
-    unicorn_t config;
-    uint32_t  i;
-    uint8_t * prev_block;
-
-    // setup configuration
-    unicorn_setup(&config, key);
-
-    prev_block = iv;
-
-    for (i = 0; i < size; i += 16)
-    {
-        // XOR plaintext with previous ciphertext block
-        xor_block(&data[i], &data[i], prev_block);
-
-        // encrypt plaintext
-        unicorn_encrypt(&config, &data[i]);
-
-        // store ciphertext block for next XOR operation
-        prev_block = &data[i];
-    }
-}
-
-int main()
-{
-    HANDLE f;
-    SIZE_T payload_len;
-    SIZE_T remainder, multiple = 16;
-    DWORD  nread;
-
-    uint8_t * payload;
-    uint32_t  nitem = 0;
-
-    // static key because the key is awesome
-    uint8_t   key[] = 
-            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
-    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
-              0x31, 0x33, 0x33, 0x37 };
-            /*  1     3     3     7  */
-
-    // generate IV, this example is not cryptographically secure
-    uint8_t   iv[16];
-
-    srand(time(0));
-    for (int i = 0; i < 16; i++)
-        iv[i] = rand() % 0xFF;
-
-    // open existing file
-    f = CreateFile ("shellcode.bin", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    // query the size and create enough space in heap
-    payload_len = GetFileSize (f, NULL);
-    remainder   = payload_len % multiple;
-    if (remainder)
-        payload_len += (multiple - remainder);
-    nitem = 2 * payload_len / multiple;
-
-    // add space for IV
-    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, payload_len + 16);
-
-    // read the shellcode
-    ReadFile(f, payload, payload_len, &nread, NULL);
-
-    // fill the remainder with 0x90 (nop)
-    // this is specific to x86 assembly
-    for (int i = 0; i < (multiple - remainder); i++)
-        payload[payload_len - 1 - i] = 0x90;
-
-    // encrypt the shellcode
-    encrypt (payload, payload_len, key, iv);
-    memcpy (&payload[payload_len], iv, 16);
-
-    // print
-    print_hex("IV", iv, 16);
-    print_hex("Payload", payload, payload_len + 16);
-
-    // destroy heap
-    HeapFree (GetProcessHeap(), 0, payload);
-}
-
-void unicorn_encrypt (unicorn_t * config, uint8_t val[16])
+void block_encrypt (unicorn_t * config, uint8_t val[BLOCKSIZEB])
 {
     uint32_t wx[4], tmp[2];
     int32_t  i;
@@ -261,11 +181,88 @@ void unicorn_encrypt (unicorn_t * config, uint8_t val[16])
     val[15] = (uint8_t)  wx[1];
 }
 
-// derive round-key from secret key
-void unicorn_setup (unicorn_t * config, uint8_t secret[16])
+// CIPHERUNICORN-A encryption with CBC
+void encrypt(uint8_t * data, uint32_t size, uint8_t key[BLOCKSIZEB], uint8_t iv[BLOCKSIZEB])
 {
-    uint32_t wk[LINE], ek[ROUND * 4 + 8];
-    int32_t  i, j, n = ROUND + 2;
+    unicorn_t config;
+    uint32_t  i;
+    uint8_t * prev_block;
+
+    // setup configuration
+    key_setup(&config, key);
+
+    prev_block = iv;
+
+    for (i = 0; i < size; i += BLOCKSIZEB)
+    {
+        // XOR plaintext with previous ciphertext block
+        xor_block(&data[i], &data[i], prev_block);
+
+        // encrypt plaintext
+        block_encrypt(&config, &data[i]);
+
+        // store ciphertext block for next XOR operation
+        prev_block = &data[i];
+    }
+}
+
+
+int main()
+{
+    HANDLE f;
+    SIZE_T payload_len, alloc_size, remainder;
+    DWORD  nread;
+
+    uint8_t * payload;
+
+    // static key because the key is awesome
+    uint8_t   key[] = 
+            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
+    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
+              0x31, 0x33, 0x33, 0x37 };
+            /*  1     3     3     7  */
+
+    // generate IV, this example is not cryptographically secure
+    uint8_t   iv[BLOCKSIZEB];
+
+    srand(time(0));
+    for (int i = 0; i < BLOCKSIZEB; i++)
+        iv[i] = rand() % 0xFF;
+
+    // open existing file
+    f = CreateFile ("shellcode.bin", GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    // query the size and create enough space in heap
+    payload_len = GetFileSize (f, NULL);
+    remainder   = payload_len % BLOCKSIZEB;
+    alloc_size  = payload_len + (remainder ? BLOCKSIZEB - remainder : 0);
+
+    // add space for IV
+    payload = (uint8_t*) HeapAlloc (GetProcessHeap(), HEAP_ZERO_MEMORY, alloc_size + blocksizeb);
+
+    // read the shellcode
+    memset(payload, 0x90, alloc_size);
+    ReadFile(f, payload, payload_len, &nread, NULL);
+
+    // encrypt the shellcode
+    memcpy (&payload[alloc_size], iv, BLOCKSIZEB);
+    encrypt (payload, payload_len, key, iv);
+
+    // print
+    print_hex("IV", iv, 16);
+    print_hex("Payload", payload, payload_len + 16);
+
+    // destroy heap
+    HeapFree (GetProcessHeap(), 0, payload);
+}
+
+
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
+// derive round-key from secret key
+void key_setup (unicorn_t * config, uint8_t secret[KEYSIZEB])
+{
+    uint32_t wk[LINE], ek[ROUNDS * 4 + 8];
+    int32_t  i, j, n = ROUNDS + 2;
     int32_t  counter = 0;
 
     for (i = 0; i < LINE; i++)
@@ -280,7 +277,7 @@ void unicorn_setup (unicorn_t * config, uint8_t secret[16])
         }
     }
 
-    for (i = 0; i < 16 * ((ROUND + 2) / 2); i += 16)
+    for (i = 0; i < 16 * ((ROUNDS + 2) / 2); i += 16)
     {
         for (j = i; j < (i + 8); j++)
         {

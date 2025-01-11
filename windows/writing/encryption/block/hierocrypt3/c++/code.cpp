@@ -152,7 +152,6 @@ typedef struct
 
 
 /* ********************* INTERNAL FUNCTIONS PROTOTYPE ********************* */
-void block_decrypt(hc3_t * config, uint8_t val[BLOCKSIZEB]);
 void key_setup(hc3_t * config, uint8_t secret[KEYSIZEB]);
 
 int32_t  polynom32_degree   (uint32_t a);
@@ -177,7 +176,6 @@ void swap_key (uint8_t * L, uint8_t * R);
 
 
 /* *************************** HELPER FUNCTIONS *************************** */
-/* XOR 2 data block */
 void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
 {
     register uint32_t i = 0;
@@ -185,6 +183,41 @@ void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
         dst[i] = src1[i] ^ src2[i];
 }
 
+
+void block_decrypt (hc3_t * config, uint8_t val[BLOCKSIZEB])
+{
+    uint8_t t[4][4], u[4][4];
+    int32_t i, j, r;
+    int32_t n;
+
+    // represent value as matrix
+    for (r = i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++, r++)
+            t[i][j] = val[r];
+
+    n = 7;
+
+    // round 1 - 7
+    for (r = 0; r < n; r++)
+    {
+        ixs (&u[0][0], &t[0][0], &config->dks[r][0][0], &config->dks[r][4][0]);
+        ixs (&u[1][0], &t[1][0], &config->dks[r][1][0], &config->dks[r][5][0]);
+        ixs (&u[2][0], &t[2][0], &config->dks[r][2][0], &config->dks[r][6][0]);
+        ixs (&u[3][0], &t[3][0], &config->dks[r][3][0], &config->dks[r][7][0]);
+        imdsh (t, u);
+    }
+
+    // round 8
+    ixs (&u[0][0], &t[0][0], &config->dks[r][0][0], &config->dks[n][4][0]);
+    ixs (&u[1][0], &t[1][0], &config->dks[r][1][0], &config->dks[n][5][0]);
+    ixs (&u[2][0], &t[2][0], &config->dks[r][2][0], &config->dks[n][6][0]);
+    ixs (&u[3][0], &t[3][0], &config->dks[r][3][0], &config->dks[n][7][0]);
+
+    // map back from matrix to array
+    for (r = i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++, r++)
+            val[r] = u[i][j] ^ config->dks[n + 1][i][j];
+}
 
 // Hierocrypt3 decryption with CBC
 void decrypt(uint8_t * data, uint32_t size, uint8_t * key, uint8_t * iv)
@@ -259,41 +292,8 @@ int main ()
     return 0;
 }
 
-void block_decrypt (hc3_t * config, uint8_t val[16])
-{
-    uint8_t t[4][4], u[4][4];
-    int32_t i, j, r;
-    int32_t n;
 
-    // represent value as matrix
-    for (r = i = 0; i < 4; i++)
-        for (j = 0; j < 4; j++, r++)
-            t[i][j] = val[r];
-
-    n = 7;
-
-    // round 1 - 7
-    for (r = 0; r < n; r++)
-    {
-        ixs (&u[0][0], &t[0][0], &config->dks[r][0][0], &config->dks[r][4][0]);
-        ixs (&u[1][0], &t[1][0], &config->dks[r][1][0], &config->dks[r][5][0]);
-        ixs (&u[2][0], &t[2][0], &config->dks[r][2][0], &config->dks[r][6][0]);
-        ixs (&u[3][0], &t[3][0], &config->dks[r][3][0], &config->dks[r][7][0]);
-        imdsh (t, u);
-    }
-
-    // round 8
-    ixs (&u[0][0], &t[0][0], &config->dks[r][0][0], &config->dks[n][4][0]);
-    ixs (&u[1][0], &t[1][0], &config->dks[r][1][0], &config->dks[n][5][0]);
-    ixs (&u[2][0], &t[2][0], &config->dks[r][2][0], &config->dks[n][6][0]);
-    ixs (&u[3][0], &t[3][0], &config->dks[r][3][0], &config->dks[n][7][0]);
-
-    // map back from matrix to array
-    for (r = i = 0; i < 4; i++)
-        for (j = 0; j < 4; j++, r++)
-            val[r] = u[i][j] ^ config->dks[n + 1][i][j];
-}
-
+/* ********************* INTERNAL FUNCTIONS IMPLEMENTATION ********************* */
 // derive round-key from secret key
 void key_setup (hc3_t * config, uint8_t secret[KEYSIZEB])
 {

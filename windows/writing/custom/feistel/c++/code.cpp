@@ -39,8 +39,8 @@ void transform (uint8_t * dst, uint8_t * src, size_t size)
     size -= 1;
     for (idx = 0; idx < size; idx+=2)
     {
-        dst[idx]    = src[idx+1] ^ key;
-        dst[idx+1]  = src[idx];     
+        dst[idx    ] = src[idx + 1] ^ key;
+        dst[idx + 1] = src[idx    ];     
     }
 }
 
