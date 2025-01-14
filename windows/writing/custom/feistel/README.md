@@ -10,5 +10,7 @@ Shellcode yang tersimpan memiliki format `[Key] [Encoded Shellcode]`.
 
 Penerapan Feistel Network dilakukan terhadap setiap pasang byte. Ambil 2 byte yakni L dan R. Pada setiap Feistel, lakukan perhitungan:
 
-L[i+1] = R[i]
-R[i+1] = L[i] xor Key
+```
+L[i + 1] = R[i]
+R[i + 1] = L[i] xor Key
+```
