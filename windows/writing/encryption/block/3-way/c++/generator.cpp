@@ -33,14 +33,22 @@ Compile:
 
 #define bswap32(x)      (rotl(x,8) & 0x00FF00FF | rotr(x, 8) & 0xFF00FF00)
 
-#ifdef _MSC_VER
-    #define LITTLE_ENDIAN
-#elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-    #define LITTLE_ENDIAN 
-#elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-    #define BIG_ENDIAN
+#if !defined(LITTLE_ENDIAN) && !defined(BIG_ENDIAN)
+    #ifdef _MSC_VER
+        #define LITTLE_ENDIAN
+    #elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+        #define LITTLE_ENDIAN 
+    #elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+        #define BIG_ENDIAN
+    #else 
+        #define BIG_ENDIAN
+    #endif
+#endif
+
+#ifdef LITTLE_ENDIAN
+    #define convert(x) bswap32(x)
 #else 
-    #define BIG_ENDIAN
+    #define convert(x) x
 #endif
 
 
@@ -90,13 +98,8 @@ void block_encrypt(uint8_t * data, uint8_t * key)
 
     for (i = 0; i < 3; i++)
     {
-#ifdef LITTLE_ENDIAN
-        _data[i] = bswap32(p_data[i]);
-        _key[i]  = bswap32(p_key[i]);
-#else
-        _data[i] = p_data[i];
-        _key[i]  = p_key[i];
-#endif 
+        _data[i] = convert(p_data[i]);
+        _key[i]  = convert(p_key[i]);
     }
 
     rndcon_gen(STRT_E, rcon);
@@ -114,11 +117,7 @@ void block_encrypt(uint8_t * data, uint8_t * key)
     theta(_data);
 
     for (i = 0; i < 3; i++)
-#ifdef LITTLE_ENDIAN
-        p_data[i] = bswap32(_data[i]);
-#else 
-        p_data[i] = _data[i];
-#endif 
+        p_data[i] = convert(_data[i]);
 }
 
 // Anubis encryption with CBC

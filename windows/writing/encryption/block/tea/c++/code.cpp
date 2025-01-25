@@ -37,6 +37,24 @@ Reference:
 
 #define bswap32(x)      (rotl(x,8) & 0x00FF00FF | rotr(x, 8) & 0xFF00FF00)
 
+#if !defined(LITTLE_ENDIAN) && !defined(BIG_ENDIAN)
+    #ifdef _MSC_VER
+        #define LITTLE_ENDIAN
+    #elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+        #define LITTLE_ENDIAN 
+    #elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+        #define BIG_ENDIAN
+    #else 
+        #define BIG_ENDIAN
+    #endif
+#endif
+
+#ifdef LITTLE_ENDIAN
+    #define convert(x)   bswap32(x)
+#else
+    #define convert(x)   (x)
+#endif
+
 
 /* *************************** HELPER FUNCTIONS *************************** */
 void xor_block(uint8_t * dst, uint8_t * src1, uint8_t * src2)
@@ -52,9 +70,9 @@ void block_decrypt (uint8_t * val, uint8_t * key)
     uint32_t  * p_val = (uint32_t*)val;
     uint32_t  * p_key = (uint32_t*)key;
 
-    uint32_t    v0 = bswap32(p_val[0]), v1 = bswap32(p_val[1]);
-    uint32_t    k0 = bswap32(p_key[0]), k1 = bswap32(p_key[1]), 
-                k2 = bswap32(p_key[2]), k3 = bswap32(p_key[3]);
+    uint32_t    v0 = convert(p_val[0]), v1 = convert(p_val[1]);
+    uint32_t    k0 = convert(p_key[0]), k1 = convert(p_key[1]), 
+                k2 = convert(p_key[2]), k3 = convert(p_key[3]);
     uint32_t    delta = 0x9E3779B9, sum = 0xC6EF3720, i;
 
     // Round: 32
@@ -66,8 +84,8 @@ void block_decrypt (uint8_t * val, uint8_t * key)
         sum -= delta;
     }
 
-    p_val[0] = bswap32(v0);
-    p_val[1] = bswap32(v1);
+    p_val[0] = convert(v0);
+    p_val[1] = convert(v1);
 }
 
 void decrypt (uint8_t * data, uint32_t length, uint8_t * key, uint8_t * iv)
