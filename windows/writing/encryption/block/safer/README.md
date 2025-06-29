@@ -11,5 +11,5 @@ Enkripsi `SAFER+` (dari keluarga SAFER) dengan implementasi pribadi tanpa menggu
 ### References
 
 - [Reversing.ID SAFER Reference](https://github.com/ReversingID/Crypto-Reference/tree/master/References/Modern/Block-Cipher/SAFER)
-- [Reversing.ID SAFER Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/SAFER/SAFER.c)
+- [Reversing.ID SAFER Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/SAFER/code.c)
 - [Wikipedia SAFER](https://en.wikipedia.org/wiki/SAFER_(cipher))

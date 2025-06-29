@@ -11,4 +11,5 @@ Enkripsi `Blowfish` dengan implementasi pribadi tanpa menggunakan API pihak keti
 ### References
 
 - [Reversing.ID Blowfish Reference](https://github.com/ReversingID/Crypto-Reference/tree/master/References/Modern/Block-Cipher/Blowfish)
+- [Reversing.ID Blowfish Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/BlowFish/code.c)
 - [Wikipedia Blowfish](https://en.wikipedia.org/wiki/Blowfish_(cipher))

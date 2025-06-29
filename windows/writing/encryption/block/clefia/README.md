@@ -11,4 +11,4 @@ Enkripsi `CLEFIA` dengan implementasi pribadi tanpa menggunakan API pihak ketiga
 ### References
 
 - [Reversing.ID CLEFIA Reference](https://github.com/ReversingID/Crypto-Reference/blob/master/References/Modern/Block-Cipher/CLEFIA)
-- [Reversing.ID CLEFIA Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/CLEFIA/CLEFIA.c)
+- [Reversing.ID CLEFIA Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/CLEFIA/code.c)

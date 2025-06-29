@@ -11,5 +11,5 @@ Enkripsi `CIPHERUNICORN-A` dengan implementasi pribadi tanpa menggunakan API pih
 ### References
 
 - [Reversing.ID CIPHERUNICORN-A Reference](https://github.com/ReversingID/Crypto-Reference/blob/master/References/Modern/Block-Cipher/CIPHERUNICORN-A)
-- [Reversing.ID CIPHERUNICORN-A Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/CIPHERUNICORN-A/Unicorn-A.c)
+- [Reversing.ID CIPHERUNICORN-A Code](https://github.com/ReversingID/Crypto-Reference/blob/master/Codes/Cipher/Block/CIPHERUNICORN-A/code.c)
 - [Wikipedia CIPHERUNICORN-A](https://en.wikipedia.org/wiki/CIPHERUNICORN-A)
