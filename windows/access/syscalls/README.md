@@ -12,3 +12,4 @@ Daftar teknik `syscall` yang diimplementasikan:
 
 - [hells-gate](hells-gate): membaca SSN langsung dari stub ntdll di memori; jika stub di-hook, baca dari ntdll.dll di disk sebagai fallback.
 - [halos-gate](halos-gate): jika stub di-hook, inferensi SSN dari stub fungsi NT tetangga yang tidak di-hook (SSN bersifat sekuensial terhadap urutan alamat).
+- [tartarus-gate](tartarus-gate): mendeteksi hook di byte 0 maupun byte 3 dari stub, kemudian gunakan neighbor scan untuk mendapatkan SSN.
