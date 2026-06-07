@@ -18,9 +18,10 @@ Untuk mendapatkan entri modul dari pointer `LIST_ENTRY`, gunakan makro `CONTAINI
 
 Daftar teknik `peb-walk` yang diimplementasikan:
 
+- [InLoadOrder](InLoadOrder): resolusi modul dengan menelusuri `InLoadOrderModuleList` dan mencocokkan `BaseDllName`.
 - [InMemoryOrder](InMemoryOrder): resolusi modul dengan menelusuri `InMemoryOrderModuleList` dan mencocokkan `BaseDllName`.
 
-Variasi lain yang direncanakan: `InLoadOrder` dan `InInitializationOrder`.
+Variasi lain yang direncanakan: `InInitializationOrder`.
 
 ### Reference
 
