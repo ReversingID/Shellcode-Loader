@@ -11,7 +11,7 @@ Teknik ini mendemonstrasikan apa yang dilakukan `GetProcAddress` secara internal
 ### How It Works
 
 1. Baca `PEB.Ldr` dari segment register (`GS` pada x64, `FS` pada x86).
-2. Iterasi `InMemoryOrderModuleList` untuk mendapatkan `DllBase` setiap modul yang dimuat. Untuk variasi resolusi lainnya, lihat [`peb-walk`](../../peb-walk).
+2. Iterasi `InMemoryOrderModuleList` untuk mendapatkan `DllBase` setiap modul yang dimuat. Untuk variasi resolusi lainnya, lihat [`module-enumeration`](../../module-enumeration).
 3. Untuk setiap modul, parse header PE dan lokasi export directory.
 4. Bandingkan setiap nama di `AddressOfNames` dengan nama fungsi target.
 5. Jika cocok, kembalikan alamat dari `AddressOfFunctions[AddressOfNameOrdinals[i]]`.

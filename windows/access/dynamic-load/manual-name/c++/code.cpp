@@ -19,7 +19,7 @@ Note:
     - resolve_name_from_base: walk export table of a single module base.
     - resolve_name: discover modules via PEB InMemoryOrderModuleList,
       then delegate to resolve_name_from_base (no LoadLibrary/GetProcAddress).
-    - alternative of PEB InMemoryOrderModuleList can be seen in access/peb-walk/
+    - alternative of PEB InMemoryOrderModuleList can be seen in access/module-enumeration/
 */
 
 #include <windows.h>

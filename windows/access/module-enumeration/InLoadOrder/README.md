@@ -1,10 +1,10 @@
 # Shellcode Loader
 
-Access the Windows API by PEB walk.
+Access the Windows API by module enumeration.
 
 ### Overview
 
-Resolve base address `kernel32.dll` dengan menelusuri `InLoadOrderModuleList` pada `PEB.Ldr`, lalu mendapatkan alamat fungsi melalui manual export walk by name. Tidak memanggil `GetModuleHandle`, `GetProcAddress`, atau `LoadLibrary`.
+Resolve base address sebuah module (misal `kernel32.dll`) dengan menelusuri `InLoadOrderModuleList` pada `PEB.Ldr`, lalu mendapatkan alamat fungsi melalui manual export walk by name. Tidak memanggil `GetModuleHandle`, `GetProcAddress`, atau `LoadLibrary`.
 
 Teknik ini memfokuskan pada langkah resolusi modul:
 - membaca PEB dari segment register
