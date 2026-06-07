@@ -15,3 +15,4 @@ Daftar teknik `dynamic-load` yang diimplementasikan:
 - [GetModuleHandle](GetModuleHandle): resolusi fungsi dari DLL yang sudah dimuat menggunakan `GetModuleHandle` dan `GetProcAddress`.
 - [LdrGetProcedureAddress](LdrGetProcedureAddress): resolusi fungsi menggunakan API internal NTDLL `LdrGetProcedureAddress`, melewati lapisan Win32.
 - [LoadLibrary](LoadLibrary): memuat DLL secara eksplisit menggunakan `LoadLibrary` lalu mendapatkan alamat fungsi dengan `GetProcAddress`.
+- [manual-name](manual-name): resolusi fungsi dengan menelusuri PEB dan export table PE secara manual, membandingkan nama fungsi tanpa `GetProcAddress`.
