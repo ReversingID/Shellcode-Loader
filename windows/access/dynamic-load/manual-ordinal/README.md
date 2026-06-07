@@ -13,7 +13,7 @@ Resolusi terdiri atas dua langkah, analog dengan `GetModuleHandle` + `GetProcAdd
 
 ### How It Works
 
-1. `resolve_module`: baca `PEB.Ldr`, iterasi `InMemoryOrderModuleList` hingga `BaseDllName` cocok.
+1. `resolve_module`: baca `PEB.Ldr`, iterasi `InMemoryOrderModuleList` hingga `BaseDllName` cocok. Untuk variasi resolusi lainnya, lihat [`peb-walk`](../../peb-walk/).
 2. `resolve_ordinal`: parse `IMAGE_EXPORT_DIRECTORY` dari `DllBase`.
 3. Hitung indeks: `index = ordinal - exp->Base`.
 4. Kembalikan `image + AddressOfFunctions[index]`.
