@@ -24,7 +24,7 @@ Teknik ini mendemonstrasikan apa yang dilakukan `GetProcAddress` secara internal
 ### Disadvantages
 
 - String nama fungsi tetap ada di binary, sehingga mudah ditemukan melalui analisis statis (gunakan [function-hash](../../function-hash) untuk menyembunyikan nama).
-- Tidak menangani forwarded export atau resolusi berdasarkan ordinal saja.
+- Tidak menangani forwarded export atau resolusi berdasarkan ordinal (lihat [manual-ordinal](../manual-ordinal)).
 
 ### Reference
 
