@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+
+# Compiled binaries and objects
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.exe
+*.dll
+*.exe.a
+
+# Build directories
+build/
+dist/
+cmake-build-debug/
+cmake-build-release/
+
+# Compiler output
+*.out
+*.exe.stackdump
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.sublime-workspace
+*.sublime-project
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Misc
+.env
+.env.local
