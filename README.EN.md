@@ -40,6 +40,7 @@ This repository covers the basic processes in shellcode loading:
 | **writing** | Strategy for writing/modifying code to memory, either directly or through transformation |
 | **permission** | Management of memory permission/attributes to allow execution |
 | **access** | System APIs used in the loading process (especially Windows) |
+| **concealment** | Runtime concealment techniques to reduce implant observability (Windows only) |
 
 Some techniques utilize APIs provided by the OS, either directly or indirectly.
 
@@ -49,8 +50,8 @@ Some techniques utilize APIs provided by the OS, either directly or indirectly.
 
 ```
 Shellcode-Loader/
-├── linux/                  # Techniques for Linux
-│   ├── allocation/        # Memory allocation
+├── linux/                # Techniques for Linux
+│   ├── allocation/       # Memory allocation
 │   ├── storage/          # Shellcode storage
 │   ├── execution/        # Code execution
 │   ├── writing/          # Code writing
@@ -68,13 +69,17 @@ Shellcode-Loader/
 │   │   ├── invoke/
 │   │   └── thread/
 │   ├── writing/          # Code writing
-│   └── permission/       # Permission management
+│   ├── permission/       # Permission management
+│   └── concealment/      # Runtime concealment (Windows)
+│       ├── module-stomping/
+│       ├── sleep-obfuscation/
+│       └── stack-spoofing/
 │
 ├── README.md             # Documentation (Bahasa Indonesia)
 ├── README.EN.md          # Documentation (English)
 ├── CONTRIBUTING.md       # Contribution guide
 ├── RESOURCES.md          # Complete index and references
-└── .gitignore           # Git ignore rules
+└── .gitignore            # Git ignore rules
 ```
 
 ---

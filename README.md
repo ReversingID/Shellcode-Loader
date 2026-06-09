@@ -40,6 +40,7 @@ Repository ini membahas proses dasar dalam pemuatan shellcode, yakni:
 | **writing** | Strategi menulis/memodifikasi kode ke memory, baik langsung atau melalui transformasi |
 | **permission** | Manajemen permission/attribute memory untuk memungkinkan eksekusi |
 | **access** | variasi akses API yang digunakan dalam proses loading (terutama Windows) |
+| **concealment** | teknik penyembunyian runtime untuk mengurangi observabilitas implant (khusus Windows) |
 
 Sebagian teknik memanfaatkan API yang disediakan oleh OS, baik secara langsung maupun tak langsung.
 
@@ -49,8 +50,8 @@ Sebagian teknik memanfaatkan API yang disediakan oleh OS, baik secara langsung m
 
 ```
 Shellcode-Loader/
-├── linux/                  # Teknik untuk Linux
-│   ├── allocation/        # Memory allocation
+├── linux/                # Teknik untuk Linux
+│   ├── allocation/       # Memory allocation
 │   ├── storage/          # Shellcode storage
 │   ├── execution/        # Code execution
 │   ├── writing/          # Code writing
@@ -68,13 +69,17 @@ Shellcode-Loader/
 │   │   ├── invoke/
 │   │   └── thread/
 │   ├── writing/          # Code writing
-│   └── permission/       # Permission management
+│   ├── permission/       # Permission management
+│   └── concealment/      # Runtime concealment (Windows)
+│       ├── module-stomping/
+│       ├── sleep-obfuscation/
+│       └── stack-spoofing/
 │
 ├── README.md             # Dokumentasi ini
 ├── README.EN.md          # Dokumentasi dalam English
 ├── CONTRIBUTING.md       # Panduan kontribusi
 ├── RESOURCES.md          # Indeks lengkap dan referensi
-└── .gitignore           # Git ignore rules
+└── .gitignore            # Git ignore rules
 ```
 
 ---

@@ -84,6 +84,21 @@ Dokumen ini menyediakan indeks lengkap dari semua teknik loading shellcode yang 
 - **Deskripsi:** Manajemen permission memory di Windows
 - **Fokus:** VirtualProtect, VirtualProtectEx untuk mengubah page attributes
 
+#### Concealment (Penyembunyian Runtime)
+- **Dokumentasi:** [windows/concealment/README.md](windows/concealment/README.md)
+- **Deskripsi:** Teknik mengurangi observabilitas implant selama dan setelah loading
+- **Fokus:** Menyembunyikan artefak in-memory dari scanner, EDR, dan analisis forensik
+
+##### Sub-Teknik Concealment Windows:
+- **Module Stomping** - [windows/concealment/module-stomping/README.md](windows/concealment/module-stomping/README.md)
+  - Menempatkan shellcode di dalam image modul legitim (code cave, section overwrite, dll.)
+
+- **Sleep Obfuscation** - [windows/concealment/sleep-obfuscation/README.md](windows/concealment/sleep-obfuscation/README.md)
+  - Mengenkripsi atau menyembunyikan memori implant selama periode idle (Ekko, Foliage, dll.)
+
+- **Stack Spoofing** - [windows/concealment/stack-spoofing/README.md](windows/concealment/stack-spoofing/README.md)
+  - Memalsukan rantai return address agar stack unwinding terlihat legitim
+
 ---
 
 ## Sumber Daya Eksternal
@@ -137,6 +152,7 @@ Dokumen ini menyediakan indeks lengkap dari semua teknik loading shellcode yang 
 | **Writing** | [writing/](linux/writing/) | [writing/](windows/writing/) |
 | **Permission** | [permission/](linux/permission/) | [permission/](windows/permission/) |
 | **Access** | - | [access/](windows/access/) |
+| **Concealment** | - | [concealment/](windows/concealment/) |
 
 ---
 
@@ -158,4 +174,4 @@ Dokumen ini menyediakan indeks lengkap dari semua teknik loading shellcode yang 
 
 ---
 
-Terakhir diupdate: 2026-06-05
+Terakhir diupdate: 2026-06-09
