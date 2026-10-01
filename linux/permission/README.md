@@ -8,4 +8,4 @@ Teknik dalam `permission` adalah teknik mengubah (aktifkan/nonaktifkan) executab
 
 Daftar teknik perubahan `permission` yang diimplementasikan:
 
-- [mprotect](mprotect)
+- mprotect

@@ -13,7 +13,7 @@ Katalog ini mencantumkan bahasa pemrograman yang didukung, bukan variasi API Win
 **Bahasa pemrograman**
 
 - [c++](c++): cast `void*` ke function pointer (`int (*)()`) lalu panggil langsung.
-- [c#](c#): `Marshal.GetDelegateForFunctionPointer<T>` setelah alokasi dan proteksi via P/Invoke.
+- [c#](c%23): `Marshal.GetDelegateForFunctionPointer<T>` setelah alokasi dan proteksi via P/Invoke.
 - [go](go): `syscall.Syscall` dengan alamat shellcode sebagai entry point.
 - [nim](nim): `cast[proc(){.nimcall.}]` pada buffer yang sudah di-`VirtualProtect`.
 - [python](python): `ctypes.CFUNCTYPE` untuk membungkus alamat memori menjadi callable Python.
